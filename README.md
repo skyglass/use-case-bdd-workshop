@@ -1,8 +1,9 @@
-# AIUP PetClinic
+# PetClinic as a Hierarchy of Goals
 
-A demo project for **Spec-Driven Development with the AI Unified Process (AIUP)**, implemented as a DDD-oriented modular monolith.
+A demo project for **Software Capability Decomposition with the AI Unified Process (AIUP)**, implemented as a DDD-oriented modular monolith.
 
-The project revisits the classic Spring PetClinic sample. The implementation is driven by capability-local use-case specifications, Gherkin scenarios, and thin Spring Modulith application services.
+The project revisits the classic Spring PetClinic sample. It starts from a goal hierarchy - Software Capabilities,
+Software Activities, Use Cases, and Scenarios - and maps that specification into implementation.
 
 ## Stack
 

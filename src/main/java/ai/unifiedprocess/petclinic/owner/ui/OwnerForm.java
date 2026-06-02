@@ -111,7 +111,7 @@ public class OwnerForm extends FormLayout {
         }
     }
 
-    private record OwnerFormData(
+    public record OwnerFormData(
             Integer id,
             String firstName,
             String lastName,

@@ -106,7 +106,7 @@ public class PetForm extends FormLayout {
         name.setErrorMessage(message);
     }
 
-    private record PetFormData(Integer id, String name, LocalDate birthDate, PetType type, Integer ownerId) {
+    public record PetFormData(Integer id, String name, LocalDate birthDate, PetType type, Integer ownerId) {
 
         static PetFormData empty() {
             return new PetFormData(null, "", null, null, null);

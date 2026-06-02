@@ -7,6 +7,8 @@ import com.vaadin.flow.router.ErrorParameter;
 import com.vaadin.flow.router.HasErrorParameter;
 import com.vaadin.flow.router.ParentLayout;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * UC-010 A2: generic application error view. Catches any uncaught
@@ -21,6 +23,8 @@ import jakarta.servlet.http.HttpServletResponse;
 @ParentLayout(MainLayout.class)
 public class ApplicationErrorView extends VerticalLayout implements HasErrorParameter<Exception> {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ApplicationErrorView.class);
+
     private final ErrorPanel panel;
     private final PresentApplicationErrorUseCase presentApplicationError;
 
@@ -34,6 +38,7 @@ public class ApplicationErrorView extends VerticalLayout implements HasErrorPara
 
     @Override
     public int setErrorParameter(BeforeEnterEvent event, ErrorParameter<Exception> parameter) {
+        LOGGER.warn("Rendering application error view for navigation failure", parameter.getException());
         String message = parameter.hasCustomMessage()
                 ? parameter.getCustomMessage()
                 : parameter.getException().getMessage();
