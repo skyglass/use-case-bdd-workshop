@@ -6,7 +6,7 @@ skinparam shadowing false
 
 actor "Visitor" as visitor
 
-rectangle "clinic-experience / view-welcome-page" {
+rectangle "clinic-portal / clinic-experience / view-welcome-page" {
     usecase "1. open welcome page" as Open
     usecase "2. build welcome content" as BuildWelcome
     usecase "3. show navigation" as ShowNav

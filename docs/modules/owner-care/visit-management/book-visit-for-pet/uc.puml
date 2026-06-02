@@ -6,7 +6,7 @@ skinparam shadowing false
 
 actor "Clinic User" as user
 
-rectangle "visit-management / book-visit-for-pet" {
+rectangle "owner-care / visit-management / book-visit-for-pet" {
     usecase "1. select pet for visit" as SelectPet
     usecase "2. prepare visit form" as Prepare
     usecase "3. submit visit details" as SubmitVisit

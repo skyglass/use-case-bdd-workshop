@@ -5,13 +5,54 @@ Read this **before implementing** anything in `src/main/java/`.
 ## Module layout
 
 Single Maven module, Spring Modulith application modules under `ai.unifiedprocess.petclinic`. The direct subpackages
-(`core`, `welcome`, `vet`, `owner`, `pet`, `visit`) are the code modules that implement the DDD modules described in
-`docs/modules/`.
+(`core`, `welcome`, `vet`, `owner`, `pet`, `visit`) are the current code modules that implement the Business
+Capabilities and Business Activities described in `docs/modules/`.
+
+The documentation hierarchy is capability-first:
+
+```text
+docs/modules/<business-capability>/entity_model.md
+docs/modules/<business-capability>/<business-activity>/<use-case-id>/
+```
+
+- **Business Capability** — business-owned ability and candidate module/service boundary, e.g. `owner-care` or
+  `vet-catalog`. It is an ownership boundary, not one concrete workflow.
+- **Business Activity** — regular value-producing activity inside a capability, e.g. `pet-management` or
+  `visit-management`.
+- **Use Case / Gherkin Feature** — minimal marketable feature described or refined by `uc.md`, which records the JIRA
+  ticket id. The `Feature:` name equals the use-case id. A good use case is a Business Activity workflow that delivers a
+  clear business outcome. This is the default application-service boundary.
+- **Gherkin Scenario** — one business-relevant flow or supported transition inside the use case.
+- **Cucumber Step Definition** — test adapter from scenario language to application services and test fixture APIs.
+
+Business Activities may own shared policies, domain services, events, or projections when multiple use cases share real
+business behavior. Do not create an application service only because an activity exists; application services remain
+use-case command/lifecycle boundaries.
+
+The standard implementation traceability chain is:
+
+```text
+Business Capability
+  -> Business Activity
+    -> Use Case / Gherkin Feature
+      -> Gherkin Scenario
+        -> Cucumber Step Definition
+          -> Application Service
+            -> Domain Model
+```
+
+The Domain Model includes aggregate roots, child entities, value objects, repository ports, domain events, and optional
+domain services.
+
+Use Event Storming to test these boundaries before changing the domain model. Put commands and domain events on a
+timeline, then ask what changes state, what must be consistent immediately, and where each transaction can end. The
+business object whose state changes is an aggregate-root candidate; rules that must hold immediately identify the
+consistency boundary; later reactions triggered by events usually belong to another command or use case.
 
 Each feature module has up to four sub-packages:
 
 - **`api`** — REST resources grouped by use case, not CRUD noun. Resource paths follow
-  `/api/<module-name>/<use-case-id>/<command>`, for example `/api/pet-management/add-pet-to-owner/add`. There is a
+  `/api/<business-activity>/<use-case-id>/<command>`, for example `/api/pet-management/add-pet-to-owner/add`. There is a
   one-to-one mapping from REST resource to application service.
 - **`application`** — use-case application services. These own command/result records, transaction boundaries, and the
   use-case lifecycle. REST resources, Vaadin views, and Cucumber steps call these services instead of reaching directly
@@ -33,6 +74,8 @@ The dash-separated use-case id from `docs/modules` drives naming:
 
 | Layer | Example |
 |-------|---------|
+| Business Capability folder | `owner-care` |
+| Business Activity folder and REST prefix | `pet-management` |
 | Use-case folder and Gherkin `Feature:` | `add-pet-to-owner` |
 | Java REST resource | `AddPetToOwnerResource` |
 | Java application service | `AddPetToOwnerUseCase` |
@@ -41,14 +84,18 @@ The dash-separated use-case id from `docs/modules` drives naming:
 | REST command URL | `/api/pet-management/add-pet-to-owner/add` |
 | Database tables | `owners`, `pets` |
 
-The `UC-*` markdown file name is the JIRA ticket id, not the use-case id.
+The `uc.md` file records the JIRA ticket id. The folder name is the use-case id.
 
 ## DDD rules
 
 - Application services are the transaction boundary for a use-case command.
 - A use case should declare its primary aggregate root or read model, but it does not require a dedicated table.
 - Several use cases may operate on the same aggregate root when that is the natural consistency boundary.
+- A use case can involve multiple aggregate roots, but commands should update only the aggregate roots that must be
+  consistent immediately inside that transaction.
 - Domain objects contain behavior and invariants. They are not Hibernate entities, jOOQ records, or table DTOs.
+- Domain services are optional. Add one only when a business rule does not belong naturally inside one aggregate root.
+- An aggregate root is itself an entity. It may contain child entities and value objects.
 - Persistence objects are database representations and must use the `PO` suffix.
 - Repository interfaces live in `domain`; jOOQ implementations live in `infrastructure`.
 - Aggregate roots are saved atomically inside the application service transaction.

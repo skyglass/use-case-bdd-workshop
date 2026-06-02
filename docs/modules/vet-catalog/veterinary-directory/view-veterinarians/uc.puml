@@ -6,7 +6,7 @@ skinparam shadowing false
 
 actor "Visitor" as visitor
 
-rectangle "veterinary-directory / view-veterinarians" {
+rectangle "vet-catalog / veterinary-directory / view-veterinarians" {
     usecase "1. request veterinarian page" as RequestPage
     usecase "2. load veterinarian directory" as LoadVets
     usecase "3. show veterinarians" as ShowDirectory

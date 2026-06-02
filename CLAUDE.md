@@ -11,21 +11,42 @@ first (`docs/`) and generating code against them.
 **`docs/modules/` is the source of truth, not the code.** When asked to
 implement something, read the relevant spec first:
 
-- `docs/modules/<module>/entity_model.md` — module-local domain model slice.
-- `docs/modules/<module>/<use-case-id>/UC-NNN-*.md` — JIRA epic
-  ticket files with preconditions, scenarios, postconditions, business rules,
-  field labels, and navigation.
-- `docs/modules/<module>/<use-case-id>/scenarios.feature`
+- `docs/modules/<business-capability>/entity_model.md` — capability-local domain model slice.
+- `docs/modules/<business-capability>/<business-activity>/<use-case-id>/uc.md` — JIRA-backed
+  use-case specification with preconditions, scenarios, postconditions, business
+  rules, field labels, and navigation.
+- `docs/modules/<business-capability>/<business-activity>/<use-case-id>/uc.feature`
   — executable Cucumber scenarios. The `Feature:` name matches the use-case
   id exactly.
-- `docs/modules/<module>/<use-case-id>/use_cases.puml` — PlantUML use-case
-  and aggregate-interaction diagram.
+- `docs/modules/<business-capability>/<business-activity>/<use-case-id>/uc.puml` — PlantUML use-case and
+  aggregate-interaction diagram.
 
-`UC-NNN` is the JIRA ticket id. The use-case id is the dash-separated folder
-name, e.g. `add-pet-to-owner`.
+`uc.md` records the JIRA ticket id. The use-case id is the dash-separated folder
+name, e.g. `add-pet-to-owner`. The Gherkin `Feature:` name equals the use-case
+id; each `Scenario:` is one business-relevant flow or supported transition
+inside that use case.
 
 If a use case and the code disagree, the use case wins unless the user says
 otherwise.
+
+## Traceability policy
+
+Use this chain for future implementation work:
+
+```text
+Business Capability
+  -> Business Activity
+    -> Use Case / Gherkin Feature
+      -> Gherkin Scenario
+        -> Cucumber Step Definition
+          -> Application Service
+            -> Domain Model
+```
+
+The Domain Model includes aggregate roots, child entities, value objects,
+repository ports, domain events, and optional domain services. Add a domain
+service only when a business rule does not belong naturally inside one aggregate
+root. An aggregate root is itself an entity.
 
 ## Stack
 
@@ -66,7 +87,7 @@ you add or change a migration, jOOQ classes won't update until you re-run
 ## When to read the detailed guides
 
 - **Before implementing a use case** → read the corresponding
-  `docs/modules/<module>/<use-case-id>/` folder first. It defines
+  `docs/modules/<business-capability>/<business-activity>/<use-case-id>/` folder first. It defines
   the JIRA ticket(s), Gherkin scenarios, preconditions, main success scenario,
   alternative flows, postconditions, business rules, field labels, and
   navigation. The spec is the source of truth.

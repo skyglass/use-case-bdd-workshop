@@ -1,7 +1,7 @@
 # Entity Model
 
-This file is the legacy full-system reference. The DDD source of truth is split by bounded module under
-[`docs/modules`](modules/), where each module owns its own `entity_model.md`.
+This file is the legacy full-system reference. The DDD source of truth is split by Business Capability under
+[`docs/modules`](modules/), where each capability owns its own `entity_model.md`.
 
 ## Entity Relationship Diagram
 

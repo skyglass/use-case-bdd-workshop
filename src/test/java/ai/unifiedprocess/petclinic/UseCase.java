@@ -13,8 +13,8 @@ public @interface UseCase {
 
 	/**
 	 * Dash-separated use-case id. This matches the folder name under
-	 * docs/modules/<module>/<use-case-id> and the Gherkin Feature name. It is not the
-	 * UC-* JIRA ticket id.
+	 * docs/modules/<business-capability>/<business-activity>/<use-case-id> and the
+	 * Gherkin Feature name. It is not the JIRA ticket id recorded in uc.md.
 	 */
 	String id();
 

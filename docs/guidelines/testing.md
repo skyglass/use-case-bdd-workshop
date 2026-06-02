@@ -4,9 +4,10 @@ Read this **before writing or modifying any test** under `src/test/java/`.
 
 ## Framework
 
-- **Cucumber JVM** executes module-local use-case scenarios from `docs/modules/**/scenarios.feature`.
-  `Feature:` names must equal the dash-separated use-case folder name. `UC-*` tags and `UC-*.md` files refer to JIRA
-  tickets, not use-case ids.
+- **Cucumber JVM** executes capability/activity-local use-case scenarios from `docs/modules/**/uc.feature`.
+  `Feature:` names must equal the dash-separated use-case folder name. `UC-*` tags and the JIRA ticket id recorded in
+  `uc.md` refer to JIRA tickets, not use-case ids. A `Scenario:` is one business-relevant flow or supported transition
+  inside the use case.
 - **Vaadin Browserless Testing** (`browserless-test-junit6`) is the default for Vaadin view tests — server-side, no
   browser, no servlet container.
   Reference: https://vaadin.com/docs/latest/flow/testing/browserless/getting-started
@@ -21,7 +22,10 @@ Read this **before writing or modifying any test** under `src/test/java/`.
 ## Cucumber step definitions
 
 - Step definitions live under `src/test/java/ai/unifiedprocess/petclinic/bdd`.
-- Step definitions call application services and domain services. They must not duplicate business rules.
+- Step definitions call application services for use-case behavior. They must not duplicate business rules or bypass the
+  application-service boundary.
+- Step definitions are adapters from Gherkin language to application-service calls and test-fixture API calls; they are
+  not part of the domain model.
 - If a scenario needs setup that is not part of the production application API, add a test-only Spring bean under
   `src/test/java/.../bdd` and inject it into the step definition.
 - Every scenario runs inside a transaction that is rolled back by `CucumberTransactionHooks`.
@@ -33,7 +37,7 @@ Read this **before writing or modifying any test** under `src/test/java/`.
 
 Tests that verify a use case are named after the JIRA ticket and use case, **not** the view. Format:
 `UC<NNN><UseCaseNameInPascalCase>Test`, e.g `UC001ViewWelcomePageTest`, `UC004FindOwnersByLastNameTest`,
-`UC007AddPetToOwnerTest`. The `NNN` matches the `UC-NNN-*.md` JIRA ticket file.
+`UC007AddPetToOwnerTest`. The `NNN` matches the JIRA ticket id recorded in `uc.md`.
 
 If a view is touched by multiple use cases, write one `UC<NNN>…Test` class per use case rather than one `XxxViewTest`
 covering all of them. Keep the test file in the **same package as the view under test** and name the class after the UC.

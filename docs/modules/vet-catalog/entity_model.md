@@ -1,7 +1,7 @@
-# Veterinary Directory Entity Model
+# Vet Catalog Capability Entity Model
 
-The directory is a read-oriented module. `VET` is the natural aggregate root for the directory slice, with specialties
-loaded as part of the displayed veterinarian profile.
+The `vet-catalog` Business Capability owns the `VET` aggregate model used by the `veterinary-directory` Business Activity.
+Specialties are loaded as part of the displayed veterinarian profile.
 
 ## Aggregate Boundary Diagram
 

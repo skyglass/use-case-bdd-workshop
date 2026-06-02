@@ -7,7 +7,7 @@ skinparam shadowing false
 actor "Visitor" as visitor
 actor "Clinic User" as user
 
-rectangle "clinic-experience / view-application-error" {
+rectangle "clinic-portal / clinic-experience / view-application-error" {
     usecase "1. receive router error" as Receive
     usecase "2. build error presentation" as BuildError
     usecase "3. show status and message" as ShowError

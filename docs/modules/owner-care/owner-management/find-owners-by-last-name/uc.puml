@@ -6,7 +6,7 @@ skinparam shadowing false
 
 actor "Clinic User" as user
 
-rectangle "owner-management / find-owners-by-last-name" {
+rectangle "owner-care / owner-management / find-owners-by-last-name" {
     usecase "1. open owner search" as OpenSearch
     usecase "2. submit last-name search" as SubmitPrefix
     usecase "3. find matching owners" as QueryOwners

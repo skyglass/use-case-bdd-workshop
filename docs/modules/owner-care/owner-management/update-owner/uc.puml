@@ -6,7 +6,7 @@ skinparam shadowing false
 
 actor "Clinic User" as user
 
-rectangle "owner-management / update-owner" {
+rectangle "owner-care / owner-management / update-owner" {
     usecase "1. select owner to edit" as SelectOwner
     usecase "2. load owner profile" as LoadOwner
     usecase "3. submit owner changes" as SubmitChanges
