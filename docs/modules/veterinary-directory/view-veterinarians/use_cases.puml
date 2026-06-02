@@ -1,0 +1,35 @@
+@startuml
+title view-veterinarians (UC-002)
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "Visitor" as visitor
+
+rectangle "veterinary-directory / view-veterinarians" {
+    usecase "1. request veterinarian page" as RequestPage
+    usecase "2. load veterinarian directory" as LoadVets
+    usecase "3. show veterinarians" as ShowDirectory
+}
+
+visitor --> RequestPage
+RequestPage --> LoadVets
+LoadVets --> ShowDirectory
+
+note bottom of RequestPage
+Vet
+end note
+
+note bottom of LoadVets
+Vet
+end note
+
+note bottom of ShowDirectory
+Vet
+end note
+
+legend right
+Vet - Vet Aggregate
+endlegend
+
+@enduml

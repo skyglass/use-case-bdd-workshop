@@ -11,6 +11,11 @@ import java.lang.annotation.Target;
 @Documented
 public @interface UseCase {
 
+	/**
+	 * Dash-separated use-case id. This matches the folder name under
+	 * docs/modules/<module>/<use-case-id> and the Gherkin Feature name. It is not the
+	 * UC-* JIRA ticket id.
+	 */
 	String id();
 
 	String scenario() default "Main Success Scenario";

@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class UC003RegisterNewOwnerTest extends PetClinicTestBase {
 
     @Test
-    @UseCase(id = "UC-003")
+    @UseCase(id = "register-new-owner")
     void addingValidOwnerPersistsAndNavigatesToDetails() {
         navigate(AddOwnerView.class);
 
@@ -64,7 +64,7 @@ class UC003RegisterNewOwnerTest extends PetClinicTestBase {
     }
 
     @Test
-    @UseCase(id = "UC-003", businessRules = "BR-001", scenario = "A1: Validation Errors")
+    @UseCase(id = "register-new-owner", businessRules = "BR-001", scenario = "A1: Validation Errors")
     void missingRequiredFieldsBlockCreation() {
         navigate(AddOwnerView.class);
         // leave everything blank and submit
@@ -82,7 +82,7 @@ class UC003RegisterNewOwnerTest extends PetClinicTestBase {
     }
 
     @Test
-    @UseCase(id = "UC-003", businessRules = "BR-002", scenario = "A1: Validation Errors")
+    @UseCase(id = "register-new-owner", businessRules = "BR-002", scenario = "A1: Validation Errors")
     void telephoneMustBeTenDigits() {
         navigate(AddOwnerView.class);
 

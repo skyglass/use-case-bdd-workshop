@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class UC007AddPetToOwnerTest extends PetClinicTestBase {
 
     @Test
-    @UseCase(id = "UC-007")
+    @UseCase(id = "add-pet-to-owner")
     void addingValidPetPersistsAndReturnsToOwnerDetails() {
         navigate(AddPetView.class,
                 Map.of(OwnerRouteParameters.OWNER_ID, Integer.toString(OWNER_DAVIS_HAROLD_ID)));
@@ -64,7 +64,7 @@ class UC007AddPetToOwnerTest extends PetClinicTestBase {
     }
 
     @Test
-    @UseCase(id = "UC-007", businessRules = "BR-001", scenario = "A1: Duplicate Pet Name for Owner")
+    @UseCase(id = "add-pet-to-owner", businessRules = "BR-001", scenario = "A1: Duplicate Pet Name for Owner")
     void duplicatePetNameForOwnerIsRejected() {
         // Betty Davis already owns Basil in the seed data.
         navigate(AddPetView.class,
@@ -84,7 +84,7 @@ class UC007AddPetToOwnerTest extends PetClinicTestBase {
     }
 
     @Test
-    @UseCase(id = "UC-007", businessRules = "BR-002", scenario = "A2: Birth Date in the Future")
+    @UseCase(id = "add-pet-to-owner", businessRules = "BR-002", scenario = "A2: Birth Date in the Future")
     void futureBirthDateIsRejected() {
         navigate(AddPetView.class,
                 Map.of(OwnerRouteParameters.OWNER_ID, Integer.toString(OWNER_DAVIS_HAROLD_ID)));
@@ -102,7 +102,7 @@ class UC007AddPetToOwnerTest extends PetClinicTestBase {
     }
 
     @Test
-    @UseCase(id = "UC-007", businessRules = "BR-003", scenario = "A3: Missing Required Field")
+    @UseCase(id = "add-pet-to-owner", businessRules = "BR-003", scenario = "A3: Missing Required Field")
     void missingTypeBlocksCreation() {
         navigate(AddPetView.class,
                 Map.of(OwnerRouteParameters.OWNER_ID, Integer.toString(OWNER_DAVIS_HAROLD_ID)));

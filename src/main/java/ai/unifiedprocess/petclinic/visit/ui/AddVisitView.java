@@ -1,13 +1,12 @@
 package ai.unifiedprocess.petclinic.visit.ui;
 
 import ai.unifiedprocess.petclinic.core.ui.MainLayout;
-import ai.unifiedprocess.petclinic.owner.domain.OwnerRepository;
 import ai.unifiedprocess.petclinic.owner.ui.OwnerDetailsView;
 import ai.unifiedprocess.petclinic.owner.ui.OwnerRouteParameters;
 import ai.unifiedprocess.petclinic.pet.domain.Pet;
-import ai.unifiedprocess.petclinic.pet.domain.PetRepository;
+import ai.unifiedprocess.petclinic.visit.application.BookVisitForPetUseCase;
+import ai.unifiedprocess.petclinic.visit.application.BookVisitForPetUseCase.BookVisitCommand;
 import ai.unifiedprocess.petclinic.visit.domain.Visit;
-import ai.unifiedprocess.petclinic.visit.domain.VisitRepository;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.datepicker.DatePicker;
@@ -52,16 +51,12 @@ public class AddVisitView extends VerticalLayout implements BeforeEnterObserver 
     private final Button saveButton;
     private final Button cancelButton;
 
-    private final OwnerRepository ownerRepository;
-    private final PetRepository petRepository;
-    private final VisitRepository visitRepository;
+    private final BookVisitForPetUseCase bookVisitForPet;
     private Integer ownerId;
     private Pet pet;
 
-    public AddVisitView(OwnerRepository ownerRepository, PetRepository petRepository, VisitRepository visitRepository) {
-        this.ownerRepository = ownerRepository;
-        this.petRepository = petRepository;
-        this.visitRepository = visitRepository;
+    public AddVisitView(BookVisitForPetUseCase bookVisitForPet) {
+        this.bookVisitForPet = bookVisitForPet;
 
         setSizeFull();
 
@@ -103,20 +98,14 @@ public class AddVisitView extends VerticalLayout implements BeforeEnterObserver 
                 .getInteger(OwnerRouteParameters.PET_ID)
                 .orElseThrow(() -> new NotFoundException("Missing pet id"));
 
-        // A3: owner not found
-        ownerRepository.findById(ownerId)
-                .orElseThrow(() -> new NotFoundException("Owner " + ownerId + " not found"));
-        // A2: pet not owned by the given owner
-        pet = petRepository.findById(petId)
-                .orElseThrow(() -> new NotFoundException("Pet " + petId + " not found"));
-        if (!pet.ownerId().equals(ownerId)) {
-            throw new NotFoundException("Pet " + petId + " does not belong to owner " + ownerId);
-        }
+        var form = bookVisitForPet.prepare(ownerId, petId)
+                .orElseThrow(() -> new NotFoundException("Pet " + petId + " does not belong to owner " + ownerId));
+        pet = form.pet();
 
         petContext.setText("Pet: " + pet.name());
 
         previousVisits.removeAll();
-        List<Visit> visits = visitRepository.findByPetId(pet.id());
+        List<Visit> visits = form.previousVisits();
         if (visits.isEmpty()) {
             previousVisits.add(new Paragraph("(none)"));
         } else {
@@ -134,7 +123,7 @@ public class AddVisitView extends VerticalLayout implements BeforeEnterObserver 
             return;
         }
         LocalDate date = dateField.getValue() == null ? LocalDate.now() : dateField.getValue();
-        visitRepository.insert(new Visit(null, date, descriptionField.getValue().trim(), pet.id()));
+        bookVisitForPet.book(new BookVisitCommand(ownerId, pet.id(), date, descriptionField.getValue().trim()));
         Notification.show(SUCCESS_MESSAGE);
         getUI().ifPresent(ui -> ui.navigate(
                 OwnerDetailsView.class, OwnerRouteParameters.forOwner(ownerId)));

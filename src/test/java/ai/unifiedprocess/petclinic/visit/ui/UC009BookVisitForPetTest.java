@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class UC009BookVisitForPetTest extends PetClinicTestBase {
 
     @Test
-    @UseCase(id = "UC-009", businessRules = "BR-002")
+    @UseCase(id = "book-visit-for-pet", businessRules = "BR-002")
     void bookingVisitPersistsAndReturnsToOwnerDetails() {
         navigate(AddVisitView.class, Map.of(
                 OwnerRouteParameters.OWNER_ID, Integer.toString(OWNER_COLEMAN_ID),
@@ -66,7 +66,7 @@ class UC009BookVisitForPetTest extends PetClinicTestBase {
     }
 
     @Test
-    @UseCase(id = "UC-009", businessRules = "BR-001", scenario = "A1: Missing Description")
+    @UseCase(id = "book-visit-for-pet", businessRules = "BR-001", scenario = "A1: Missing Description")
     void blankDescriptionIsRejected() {
         navigate(AddVisitView.class, Map.of(
                 OwnerRouteParameters.OWNER_ID, Integer.toString(OWNER_COLEMAN_ID),
@@ -82,7 +82,7 @@ class UC009BookVisitForPetTest extends PetClinicTestBase {
     }
 
     @Test
-    @UseCase(id = "UC-009", businessRules = "BR-003", scenario = "A2: Pet Not Owned by Given Owner")
+    @UseCase(id = "book-visit-for-pet", businessRules = "BR-003", scenario = "A2: Pet Not Owned by Given Owner")
     void mismatchedOwnerAndPetRoutesToErrorView() {
         // Trying to book a visit for Coleman's Max under Franklin's ownership
         // fails the BeforeEnter consistency check and is rerouted to the

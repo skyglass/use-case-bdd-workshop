@@ -1,7 +1,8 @@
 package ai.unifiedprocess.petclinic.owner.ui;
 
 import ai.unifiedprocess.petclinic.core.ui.MainLayout;
-import ai.unifiedprocess.petclinic.owner.domain.OwnerRepository;
+import ai.unifiedprocess.petclinic.owner.application.RegisterNewOwnerUseCase;
+import ai.unifiedprocess.petclinic.owner.application.RegisterNewOwnerUseCase.RegisterOwnerCommand;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.H2;
@@ -32,7 +33,7 @@ public class AddOwnerView extends VerticalLayout {
     private final Button saveButton;
     private final Button cancelButton;
 
-    public AddOwnerView(OwnerRepository ownerRepository) {
+    public AddOwnerView(RegisterNewOwnerUseCase registerNewOwner) {
         setSizeFull();
 
         heading = new H2("Add Owner");
@@ -43,7 +44,12 @@ public class AddOwnerView extends VerticalLayout {
         saveButton = new Button("Add Owner", click -> {
             ownerForm.validateAndRead(null).ifPresentOrElse(
                     owner -> {
-                        Integer newId = ownerRepository.insert(owner);
+                        Integer newId = registerNewOwner.register(new RegisterOwnerCommand(
+                                owner.firstName(),
+                                owner.lastName(),
+                                owner.address(),
+                                owner.city(),
+                                owner.telephone())).ownerId();
                         Notification.show(SUCCESS_MESSAGE);
                         getUI().ifPresent(ui -> ui.navigate(
                                 OwnerDetailsView.class, OwnerRouteParameters.forOwner(newId)));

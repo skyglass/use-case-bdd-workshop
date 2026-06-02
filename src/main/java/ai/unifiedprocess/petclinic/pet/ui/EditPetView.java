@@ -1,11 +1,12 @@
 package ai.unifiedprocess.petclinic.pet.ui;
 
 import ai.unifiedprocess.petclinic.core.ui.MainLayout;
-import ai.unifiedprocess.petclinic.owner.domain.OwnerRepository;
 import ai.unifiedprocess.petclinic.owner.ui.OwnerDetailsView;
 import ai.unifiedprocess.petclinic.owner.ui.OwnerRouteParameters;
+import ai.unifiedprocess.petclinic.pet.application.UpdatePetUseCase;
+import ai.unifiedprocess.petclinic.pet.application.UpdatePetUseCase.UpdatePetCommand;
+import ai.unifiedprocess.petclinic.pet.domain.DuplicatePetNameException;
 import ai.unifiedprocess.petclinic.pet.domain.Pet;
-import ai.unifiedprocess.petclinic.pet.domain.PetRepository;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.H2;
@@ -38,21 +39,19 @@ public class EditPetView extends VerticalLayout implements BeforeEnterObserver {
     private final Button saveButton;
     private final Button cancelButton;
 
-    private final OwnerRepository ownerRepository;
-    private final PetRepository petRepository;
+    private final UpdatePetUseCase updatePet;
     private Integer ownerId;
     private Integer petId;
 
-    public EditPetView(OwnerRepository ownerRepository, PetRepository petRepository) {
-        this.ownerRepository = ownerRepository;
-        this.petRepository = petRepository;
+    public EditPetView(UpdatePetUseCase updatePet) {
+        this.updatePet = updatePet;
 
         setSizeFull();
 
         heading = new H2("Edit Pet");
         heading.addClassNames(LumoUtility.Margin.NONE);
 
-        petForm = new PetForm(petRepository.findAllTypes());
+        petForm = new PetForm(updatePet.availablePetTypes());
 
         saveButton = new Button("Update Pet", click -> save());
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -72,25 +71,20 @@ public class EditPetView extends VerticalLayout implements BeforeEnterObserver {
                 .getInteger(OwnerRouteParameters.PET_ID)
                 .orElseThrow(() -> new NotFoundException("Missing pet id"));
 
-        // UC-009 A2/A3 analogue: validate consistency of the pet/owner pair
-        ownerRepository.findById(ownerId)
-                .orElseThrow(() -> new NotFoundException("Owner " + ownerId + " not found"));
-        Pet pet = petRepository.findById(petId)
-                .orElseThrow(() -> new NotFoundException("Pet " + petId + " not found"));
-        if (!pet.ownerId().equals(ownerId)) {
-            throw new NotFoundException("Pet " + petId + " does not belong to owner " + ownerId);
-        }
+        Pet pet = updatePet.findPetForOwner(ownerId, petId)
+                .orElseThrow(() -> new NotFoundException("Pet " + petId + " does not belong to owner " + ownerId));
         petForm.read(pet);
     }
 
     private void save() {
         // UC-008 BR-003: type may be left unchanged, so do not require it
         petForm.validateAndRead(petId, ownerId, false).ifPresent(pet -> {
-            if (petRepository.existsByOwnerAndName(ownerId, pet.name(), petId)) {
+            try {
+                updatePet.update(new UpdatePetCommand(ownerId, petId, pet.name(), pet.birthDate(), pet.type()));
+            } catch (DuplicatePetNameException e) {
                 petForm.rejectName("already exists");
                 return;
             }
-            petRepository.update(pet);
             Notification.show(SUCCESS_MESSAGE);
             getUI().ifPresent(ui -> ui.navigate(
                     OwnerDetailsView.class, OwnerRouteParameters.forOwner(ownerId)));

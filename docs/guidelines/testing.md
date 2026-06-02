@@ -4,6 +4,9 @@ Read this **before writing or modifying any test** under `src/test/java/`.
 
 ## Framework
 
+- **Cucumber JVM** executes module-local use-case scenarios from `docs/modules/**/scenarios.feature`.
+  `Feature:` names must equal the dash-separated use-case folder name. `UC-*` tags and `UC-*.md` files refer to JIRA
+  tickets, not use-case ids.
 - **Vaadin Browserless Testing** (`browserless-test-junit6`) is the default for Vaadin view tests — server-side, no
   browser, no servlet container.
   Reference: https://vaadin.com/docs/latest/flow/testing/browserless/getting-started
@@ -15,11 +18,22 @@ Read this **before writing or modifying any test** under `src/test/java/`.
 - **Karibu is gone.** Any `com.github.mvysny.kaributesting.*` import is a mistake — the project is all
   `SpringBrowserlessTest` / `ComponentQuery` now. The `karibu-test` skill is obsolete.
 
+## Cucumber step definitions
+
+- Step definitions live under `src/test/java/ai/unifiedprocess/petclinic/bdd`.
+- Step definitions call application services and domain services. They must not duplicate business rules.
+- If a scenario needs setup that is not part of the production application API, add a test-only Spring bean under
+  `src/test/java/.../bdd` and inject it into the step definition.
+- Every scenario runs inside a transaction that is rolled back by `CucumberTransactionHooks`.
+- Fixture cleanup must be idempotent so scenarios can be rerun against the same test database without depending on
+  previous scenario order.
+- Use Cucumber for business workflows and browserless Vaadin tests for UI rendering, form wiring, and navigation.
+
 ## Test class naming — `UC<NNN><UseCaseName>Test`
 
-Tests that verify a use case are named after the use case, **not** the view. Format:
+Tests that verify a use case are named after the JIRA ticket and use case, **not** the view. Format:
 `UC<NNN><UseCaseNameInPascalCase>Test`, e.g `UC001ViewWelcomePageTest`, `UC004FindOwnersByLastNameTest`,
-`UC007AddPetToOwnerTest`. The `NNN` matches the `UC-NNN-*.md` file in `docs/use_cases/`.
+`UC007AddPetToOwnerTest`. The `NNN` matches the `UC-NNN-*.md` JIRA ticket file.
 
 If a view is touched by multiple use cases, write one `UC<NNN>…Test` class per use case rather than one `XxxViewTest`
 covering all of them. Keep the test file in the **same package as the view under test** and name the class after the UC.
@@ -32,11 +46,11 @@ never on the class — the annotation is `@Target(METHOD)` and cannot go on a cl
 ```java
 
 @Test
-@UseCase(id = "UC-004", scenario = "A2: Exact match", businessRules = "BR-001")
+@UseCase(id = "find-owners-by-last-name", scenario = "A2: Exact match", businessRules = "BR-001")
 void singleMatchNavigatesDirectlyToDetails() { ...}
 ```
 
-- `id` — required, matches a `docs/use_cases/UC-NNN-*.md` file.
+- `id` — required, matches the dash-separated use-case id and Gherkin `Feature:` name.
 - `scenario` — optional, defaults to `"Main Success Scenario"`. Set it for alternative flows (`"A1: Validation Errors"`,
   `"A2: Owner not found"`).
 - `businessRules` — optional string array of BR IDs (`"BR-001"`, `"BR-002"`) when the test specifically exercises them.

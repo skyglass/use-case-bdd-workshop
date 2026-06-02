@@ -1,0 +1,47 @@
+@startuml
+title book-visit-for-pet (UC-009)
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "Clinic User" as user
+
+rectangle "visit-management / book-visit-for-pet" {
+    usecase "1. select pet for visit" as SelectPet
+    usecase "2. prepare visit form" as Prepare
+    usecase "3. submit visit details" as SubmitVisit
+    usecase "4. book visit for pet" as BookVisit
+    usecase "5. show visit history" as ShowHistory
+}
+
+user --> SelectPet
+SelectPet --> Prepare
+Prepare --> SubmitVisit
+SubmitVisit --> BookVisit
+BookVisit --> ShowHistory
+
+note bottom of SelectPet
+Owner
+end note
+
+note bottom of Prepare
+Owner
+end note
+
+note bottom of SubmitVisit
+Owner
+end note
+
+note bottom of BookVisit
+Owner
+end note
+
+note bottom of ShowHistory
+Owner
+end note
+
+legend right
+Owner - Owner Aggregate
+endlegend
+
+@enduml

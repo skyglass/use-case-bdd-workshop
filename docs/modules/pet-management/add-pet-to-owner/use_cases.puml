@@ -1,0 +1,47 @@
+@startuml
+title add-pet-to-owner (UC-007)
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "Clinic User" as user
+
+rectangle "pet-management / add-pet-to-owner" {
+    usecase "1. select owner" as SelectOwner
+    usecase "2. prepare pet form" as PrepareForm
+    usecase "3. submit pet details" as SubmitPet
+    usecase "4. add pet to owner" as AddPet
+    usecase "5. show owner details" as ShowDetails
+}
+
+user --> SelectOwner
+SelectOwner --> PrepareForm
+PrepareForm --> SubmitPet
+SubmitPet --> AddPet
+AddPet --> ShowDetails
+
+note bottom of SelectOwner
+Owner
+end note
+
+note bottom of PrepareForm
+Owner
+end note
+
+note bottom of SubmitPet
+Owner
+end note
+
+note bottom of AddPet
+Owner
+end note
+
+note bottom of ShowDetails
+Owner
+end note
+
+legend right
+Owner - Owner Aggregate
+endlegend
+
+@enduml

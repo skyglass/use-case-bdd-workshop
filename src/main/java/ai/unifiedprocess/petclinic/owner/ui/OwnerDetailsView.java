@@ -1,14 +1,13 @@
 package ai.unifiedprocess.petclinic.owner.ui;
 
 import ai.unifiedprocess.petclinic.core.ui.MainLayout;
+import ai.unifiedprocess.petclinic.owner.application.ViewOwnerDetailsUseCase;
+import ai.unifiedprocess.petclinic.owner.application.ViewOwnerDetailsUseCase.PetDetails;
 import ai.unifiedprocess.petclinic.owner.domain.Owner;
-import ai.unifiedprocess.petclinic.owner.domain.OwnerRepository;
 import ai.unifiedprocess.petclinic.pet.domain.Pet;
-import ai.unifiedprocess.petclinic.pet.domain.PetRepository;
 import ai.unifiedprocess.petclinic.pet.ui.AddPetView;
 import ai.unifiedprocess.petclinic.pet.ui.EditPetView;
 import ai.unifiedprocess.petclinic.visit.domain.Visit;
-import ai.unifiedprocess.petclinic.visit.domain.VisitRepository;
 import ai.unifiedprocess.petclinic.visit.ui.AddVisitView;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -52,16 +51,12 @@ public class OwnerDetailsView extends VerticalLayout implements BeforeEnterObser
     private final Button addPetButton;
     private final VerticalLayout petsSection;
 
-    private final OwnerRepository ownerRepository;
-    private final PetRepository petRepository;
-    private final VisitRepository visitRepository;
+    private final ViewOwnerDetailsUseCase viewOwnerDetails;
 
     private Integer currentOwnerId;
 
-    public OwnerDetailsView(OwnerRepository ownerRepository, PetRepository petRepository, VisitRepository visitRepository) {
-        this.ownerRepository = ownerRepository;
-        this.petRepository = petRepository;
-        this.visitRepository = visitRepository;
+    public OwnerDetailsView(ViewOwnerDetailsUseCase viewOwnerDetails) {
+        this.viewOwnerDetails = viewOwnerDetails;
 
         setSizeFull();
 
@@ -93,9 +88,9 @@ public class OwnerDetailsView extends VerticalLayout implements BeforeEnterObser
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         Integer ownerId = parseOwnerId(event);
-        Owner owner = ownerRepository.findById(ownerId)
+        var details = viewOwnerDetails.findDetails(ownerId)
                 .orElseThrow(() -> new NotFoundException("Owner " + ownerId + " not found"));
-        render(owner);
+        render(details.owner(), details.pets());
     }
 
     private static Integer parseOwnerId(BeforeEnterEvent event) {
@@ -104,7 +99,7 @@ public class OwnerDetailsView extends VerticalLayout implements BeforeEnterObser
                 .orElseThrow(() -> new NotFoundException("Missing owner id"));
     }
 
-    private void render(Owner owner) {
+    private void render(Owner owner, List<PetDetails> pets) {
         currentOwnerId = owner.id();
         namePara.setText(owner.firstName() + " " + owner.lastName());
         addressPara.setText(owner.address());
@@ -112,13 +107,13 @@ public class OwnerDetailsView extends VerticalLayout implements BeforeEnterObser
         telephonePara.setText(owner.telephone());
 
         petsSection.removeAll();
-        List<Pet> pets = petRepository.findByOwnerId(owner.id());
-        for (Pet pet : pets) {
+        for (PetDetails pet : pets) {
             petsSection.add(renderPet(owner, pet));
         }
     }
 
-    private VerticalLayout renderPet(Owner owner, Pet pet) {
+    private VerticalLayout renderPet(Owner owner, PetDetails petDetails) {
+        Pet pet = petDetails.pet();
         VerticalLayout petBox = new VerticalLayout();
         petBox.setPadding(false);
         petBox.setSpacing(false);
@@ -146,7 +141,7 @@ public class OwnerDetailsView extends VerticalLayout implements BeforeEnterObser
         visits.setPadding(false);
         visits.setSpacing(false);
         visits.add(new Paragraph("Visits:"));
-        List<Visit> visitList = visitRepository.findByPetId(pet.id());
+        List<Visit> visitList = petDetails.visits();
         if (visitList.isEmpty()) {
             Paragraph none = new Paragraph("(no visits yet)");
             none.addClassNames(LumoUtility.TextColor.SECONDARY);

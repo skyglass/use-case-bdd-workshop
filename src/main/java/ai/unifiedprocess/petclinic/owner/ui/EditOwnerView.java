@@ -1,8 +1,9 @@
 package ai.unifiedprocess.petclinic.owner.ui;
 
 import ai.unifiedprocess.petclinic.core.ui.MainLayout;
+import ai.unifiedprocess.petclinic.owner.application.UpdateOwnerUseCase;
+import ai.unifiedprocess.petclinic.owner.application.UpdateOwnerUseCase.UpdateOwnerCommand;
 import ai.unifiedprocess.petclinic.owner.domain.Owner;
-import ai.unifiedprocess.petclinic.owner.domain.OwnerRepository;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.H2;
@@ -35,11 +36,11 @@ public class EditOwnerView extends VerticalLayout implements BeforeEnterObserver
     private final Button saveButton;
     private final Button cancelButton;
 
-    private final OwnerRepository ownerRepository;
+    private final UpdateOwnerUseCase updateOwner;
     private Integer currentOwnerId;
 
-    public EditOwnerView(OwnerRepository ownerRepository) {
-        this.ownerRepository = ownerRepository;
+    public EditOwnerView(UpdateOwnerUseCase updateOwner) {
+        this.updateOwner = updateOwner;
         setSizeFull();
 
         heading = new H2("Edit Owner");
@@ -61,7 +62,7 @@ public class EditOwnerView extends VerticalLayout implements BeforeEnterObserver
         Integer ownerId = event.getRouteParameters()
                 .getInteger(OwnerRouteParameters.OWNER_ID)
                 .orElseThrow(() -> new NotFoundException("Missing owner id"));
-        Owner owner = ownerRepository.findById(ownerId)
+        Owner owner = updateOwner.findOwnerToUpdate(ownerId)
                 .orElseThrow(() -> new NotFoundException("Owner " + ownerId + " not found"));
         currentOwnerId = owner.id();
         ownerForm.read(owner);
@@ -70,7 +71,13 @@ public class EditOwnerView extends VerticalLayout implements BeforeEnterObserver
     private void save() {
         ownerForm.validateAndRead(currentOwnerId).ifPresentOrElse(
                 owner -> {
-                    ownerRepository.update(owner);
+                    updateOwner.update(new UpdateOwnerCommand(
+                            currentOwnerId,
+                            owner.firstName(),
+                            owner.lastName(),
+                            owner.address(),
+                            owner.city(),
+                            owner.telephone()));
                     Notification.show(SUCCESS_MESSAGE);
                     getUI().ifPresent(ui -> ui.navigate(
                             OwnerDetailsView.class, OwnerRouteParameters.forOwner(owner.id())));

@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class UC008UpdatePetTest extends PetClinicTestBase {
 
     @Test
-    @UseCase(id = "UC-008")
+    @UseCase(id = "update-pet")
     void editingPetPersistsChanges() {
         navigate(EditPetView.class, Map.of(
                 OwnerRouteParameters.OWNER_ID, Integer.toString(OWNER_COLEMAN_ID),
@@ -59,7 +59,7 @@ class UC008UpdatePetTest extends PetClinicTestBase {
     }
 
     @Test
-    @UseCase(id = "UC-008", businessRules = "BR-001", scenario = "A1: Duplicate Pet Name")
+    @UseCase(id = "update-pet", businessRules = "BR-001", scenario = "A1: Duplicate Pet Name")
     void cannotRenamePetToMatchSiblingPet() {
         navigate(EditPetView.class, Map.of(
                 OwnerRouteParameters.OWNER_ID, Integer.toString(OWNER_COLEMAN_ID),
@@ -86,7 +86,7 @@ class UC008UpdatePetTest extends PetClinicTestBase {
     }
 
     @Test
-    @UseCase(id = "UC-008", businessRules = "BR-002", scenario = "A2: Birth Date in the Future")
+    @UseCase(id = "update-pet", businessRules = "BR-002", scenario = "A2: Birth Date in the Future")
     void futureBirthDateIsRejectedOnUpdate() {
         navigate(EditPetView.class, Map.of(
                 OwnerRouteParameters.OWNER_ID, Integer.toString(OWNER_COLEMAN_ID),

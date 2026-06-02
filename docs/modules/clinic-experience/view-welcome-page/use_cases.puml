@@ -1,0 +1,35 @@
+@startuml
+title view-welcome-page (UC-001)
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "Visitor" as visitor
+
+rectangle "clinic-experience / view-welcome-page" {
+    usecase "1. open welcome page" as Open
+    usecase "2. build welcome content" as BuildWelcome
+    usecase "3. show navigation" as ShowNav
+}
+
+visitor --> Open
+Open --> BuildWelcome
+BuildWelcome --> ShowNav
+
+note bottom of Open
+Welcome Page
+end note
+
+note bottom of BuildWelcome
+Welcome Page
+end note
+
+note bottom of ShowNav
+Welcome Page
+end note
+
+legend right
+Welcome Page - Welcome Page Read Model
+endlegend
+
+@enduml

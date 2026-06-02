@@ -1,8 +1,8 @@
 package ai.unifiedprocess.petclinic.vet.ui;
 
 import ai.unifiedprocess.petclinic.core.ui.MainLayout;
+import ai.unifiedprocess.petclinic.vet.application.ViewVeterinariansUseCase;
 import ai.unifiedprocess.petclinic.vet.domain.Vet;
-import ai.unifiedprocess.petclinic.vet.domain.VetRepository;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -23,7 +23,7 @@ public class VetsView extends VerticalLayout {
     private final H2 heading;
     private final Grid<Vet> vetsGrid;
 
-    public VetsView(VetRepository vetRepository) {
+    public VetsView(ViewVeterinariansUseCase viewVeterinarians) {
         setSizeFull();
 
         heading = new H2("Veterinarians");
@@ -34,7 +34,7 @@ public class VetsView extends VerticalLayout {
         vetsGrid.addColumn(Vet::lastName).setHeader("Last Name").setAutoWidth(true);
         vetsGrid.addColumn(Vet::specialtiesLabel).setHeader("Specialties").setAutoWidth(true);
         vetsGrid.setSizeFull();
-        vetsGrid.setItems(query -> vetRepository.findPage(query.getOffset(), query.getLimit()));
+        vetsGrid.setItems(query -> viewVeterinarians.findPage(query.getOffset(), query.getLimit()));
 
         add(heading, vetsGrid);
         setFlexGrow(1, vetsGrid);

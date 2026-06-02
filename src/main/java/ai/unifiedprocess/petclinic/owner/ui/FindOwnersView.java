@@ -1,9 +1,9 @@
 package ai.unifiedprocess.petclinic.owner.ui;
 
 import ai.unifiedprocess.petclinic.core.ui.MainLayout;
+import ai.unifiedprocess.petclinic.owner.application.FindOwnersByLastNameUseCase;
 import ai.unifiedprocess.petclinic.owner.domain.Owner;
 import ai.unifiedprocess.petclinic.owner.domain.OwnerListing;
-import ai.unifiedprocess.petclinic.owner.domain.OwnerRepository;
 import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -41,10 +41,10 @@ public class FindOwnersView extends VerticalLayout {
     private final Button addOwnerButton;
     private final Grid<OwnerListing> resultsGrid;
 
-    private final OwnerRepository ownerRepository;
+    private final FindOwnersByLastNameUseCase findOwnersByLastName;
 
-    public FindOwnersView(OwnerRepository ownerRepository) {
-        this.ownerRepository = ownerRepository;
+    public FindOwnersView(FindOwnersByLastNameUseCase findOwnersByLastName) {
+        this.findOwnersByLastName = findOwnersByLastName;
 
         setSizeFull();
 
@@ -91,17 +91,17 @@ public class FindOwnersView extends VerticalLayout {
         lastNameField.setInvalid(false);
         String prefix = lastNameField.getValue() == null ? "" : lastNameField.getValue().trim();
 
-        int total = ownerRepository.countByLastNamePrefix(prefix);
-        if (total == 0) {
+        var result = findOwnersByLastName.search(prefix);
+        if (result.hasNoMatches()) {
             // A3: no match
             lastNameField.setInvalid(true);
             lastNameField.setErrorMessage("not found");
             resultsGrid.setVisible(false);
             return;
         }
-        if (total == 1) {
+        if (result.hasSingleMatch()) {
             // A2: exactly one → direct navigate
-            Owner only = ownerRepository.findByLastNamePrefix(prefix, 0, 1).findFirst().orElseThrow();
+            Owner only = result.singleMatch();
             getUI().ifPresent(ui -> ui.navigate(
                     OwnerDetailsView.class, OwnerRouteParameters.forOwner(only.id())));
             return;
@@ -110,6 +110,6 @@ public class FindOwnersView extends VerticalLayout {
         // joins each owner's pet names in a single round-trip (no N+1).
         resultsGrid.setVisible(true);
         resultsGrid.setItems(query ->
-                ownerRepository.findListingByLastNamePrefix(prefix, query.getOffset(), query.getLimit()));
+                findOwnersByLastName.findListingPage(prefix, query.getOffset(), query.getLimit()));
     }
 }

@@ -1,4 +1,5 @@
-@startuml Use Cases Overview
+@startuml
+title Use Cases Overview
 left to right direction
 skinparam packageStyle rectangle
 
@@ -8,28 +9,28 @@ actor "Clinic User" as user
 rectangle "Spring PetClinic" {
 
     package "General" {
-        usecase "UC-001\nView Welcome Page" as UC001
-        usecase "UC-002\nView Veterinarians" as UC002
+        usecase "view-welcome-page\nUC-001" as UC001
+        usecase "view-veterinarians\nUC-002" as UC002
     }
 
     package "Owner Management" {
-        usecase "UC-003\nRegister New Owner" as UC003
-        usecase "UC-004\nFind Owners by Last Name" as UC004
-        usecase "UC-005\nView Owner Details" as UC005
-        usecase "UC-006\nUpdate Owner" as UC006
+        usecase "register-new-owner\nUC-003" as UC003
+        usecase "find-owners-by-last-name\nUC-004" as UC004
+        usecase "view-owner-details\nUC-005" as UC005
+        usecase "update-owner\nUC-006" as UC006
     }
 
     package "Pet Management" {
-        usecase "UC-007\nAdd Pet to Owner" as UC007
-        usecase "UC-008\nUpdate Pet" as UC008
+        usecase "add-pet-to-owner\nUC-007" as UC007
+        usecase "update-pet\nUC-008" as UC008
     }
 
     package "Visit Management" {
-        usecase "UC-009\nBook Visit for Pet" as UC009
+        usecase "book-visit-for-pet\nUC-009" as UC009
     }
 
     package "Error Handling" {
-        usecase "UC-010\nView Application Error" as UC010
+        usecase "view-application-error\nUC-010" as UC010
     }
 }
 

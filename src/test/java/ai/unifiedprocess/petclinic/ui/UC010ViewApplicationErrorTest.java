@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class UC010ViewApplicationErrorTest extends PetClinicTestBase {
 
     @Test
-    @UseCase(id = "UC-010", scenario = "A2: Unexpected Error")
+    @UseCase(id = "view-application-error", scenario = "A2: Unexpected Error")
     void navigatingToOupsShowsApplicationErrorView() {
         UI.getCurrent().navigate("oups");
 
@@ -42,7 +42,7 @@ class UC010ViewApplicationErrorTest extends PetClinicTestBase {
     }
 
     @Test
-    @UseCase(id = "UC-010", scenario = "A2: Unexpected Error", businessRules = "BR-003")
+    @UseCase(id = "view-application-error", scenario = "A2: Unexpected Error", businessRules = "BR-003")
     void errorViewShowsExceptionMessage() {
         UI.getCurrent().navigate("oups");
 
@@ -53,7 +53,7 @@ class UC010ViewApplicationErrorTest extends PetClinicTestBase {
     }
 
     @Test
-    @UseCase(id = "UC-010", businessRules = "BR-002")
+    @UseCase(id = "view-application-error", businessRules = "BR-002")
     void errorViewOffersBackToHomeLink() {
         UI.getCurrent().navigate("oups");
 
@@ -65,7 +65,7 @@ class UC010ViewApplicationErrorTest extends PetClinicTestBase {
     }
 
     @Test
-    @UseCase(id = "UC-010", scenario = "A1: Resource Not Found")
+    @UseCase(id = "view-application-error", scenario = "A1: Resource Not Found")
     void unknownOwnerRoutesToNotFoundErrorView() {
         // Bypass the test base's navigate(Class, ...) which validates target
         // type equality — routing lands on NotFoundErrorView here.

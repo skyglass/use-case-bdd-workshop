@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class UC004FindOwnersByLastNameTest extends PetClinicTestBase {
 
     @Test
-    @UseCase(id = "UC-004", businessRules = "BR-001")
+    @UseCase(id = "find-owners-by-last-name", businessRules = "BR-001")
     void prefixSearchReturnsMatchingOwners() {
         navigate(FindOwnersView.class);
         test($(TextField.class).withCaption("Last name").single()).setValue("Dav");
@@ -40,7 +40,7 @@ class UC004FindOwnersByLastNameTest extends PetClinicTestBase {
     }
 
     @Test
-    @UseCase(id = "UC-004", businessRules = "BR-003", scenario = "A1: Empty Last-Name Search")
+    @UseCase(id = "find-owners-by-last-name", businessRules = "BR-003", scenario = "A1: Empty Last-Name Search")
     void emptyLastNameReturnsAllOwners() {
         navigate(FindOwnersView.class);
         test($(TextField.class).withCaption("Last name").single()).setValue("");
@@ -52,7 +52,7 @@ class UC004FindOwnersByLastNameTest extends PetClinicTestBase {
     }
 
     @Test
-    @UseCase(id = "UC-004", scenario = "A2: Exactly One Match")
+    @UseCase(id = "find-owners-by-last-name", scenario = "A2: Exactly One Match")
     void exactlyOneMatchNavigatesDirectlyToOwnerDetails() {
         navigate(FindOwnersView.class);
         test($(TextField.class).withCaption("Last name").single()).setValue("Fra");
@@ -63,7 +63,7 @@ class UC004FindOwnersByLastNameTest extends PetClinicTestBase {
     }
 
     @Test
-    @UseCase(id = "UC-004", scenario = "A3: No Match")
+    @UseCase(id = "find-owners-by-last-name", scenario = "A3: No Match")
     void noMatchAttachesNotFoundToLastNameField() {
         navigate(FindOwnersView.class);
         test($(TextField.class).withCaption("Last name").single()).setValue("Nonexistent");

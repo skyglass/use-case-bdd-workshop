@@ -26,14 +26,14 @@ import static org.junit.jupiter.api.Assertions.*;
 class UC002ViewVeterinariansTest extends PetClinicTestBase {
 
     @Test
-    @UseCase(id = "UC-002", businessRules = "BR-003")
+    @UseCase(id = "view-veterinarians", businessRules = "BR-003")
     void vetsViewIsReachableWithoutAuthentication() {
         assertDoesNotThrow(() -> navigate(VetsView.class),
                 "Expected /vets to render without authentication");
     }
 
     @Test
-    @UseCase(id = "UC-002")
+    @UseCase(id = "view-veterinarians")
     void vetsGridContainsSeededVets() {
         navigate(VetsView.class);
         Grid<Vet> grid = grid();
@@ -46,7 +46,7 @@ class UC002ViewVeterinariansTest extends PetClinicTestBase {
     }
 
     @Test
-    @UseCase(id = "UC-002", businessRules = "BR-002")
+    @UseCase(id = "view-veterinarians", businessRules = "BR-002")
     void specialtiesAreListedAlphabeticallyWithinEachVet() {
         navigate(VetsView.class);
 
@@ -57,7 +57,7 @@ class UC002ViewVeterinariansTest extends PetClinicTestBase {
     }
 
     @Test
-    @UseCase(id = "UC-002")
+    @UseCase(id = "view-veterinarians")
     void vetWithoutSpecialtiesIsRenderedAsNone() {
         navigate(VetsView.class);
 
@@ -68,7 +68,7 @@ class UC002ViewVeterinariansTest extends PetClinicTestBase {
     }
 
     @Test
-    @UseCase(id = "UC-002", businessRules = "BR-001")
+    @UseCase(id = "view-veterinarians", businessRules = "BR-001")
     void gridColumnsMatchSpecification() {
         navigate(VetsView.class);
         List<String> headers = grid().getColumns().stream()

@@ -1,5 +1,6 @@
 package ai.unifiedprocess.petclinic.core.ui;
 
+import ai.unifiedprocess.petclinic.core.application.PresentApplicationErrorUseCase;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.ErrorParameter;
@@ -19,8 +20,10 @@ import jakarta.servlet.http.HttpServletResponse;
 public class NotFoundErrorView extends VerticalLayout implements HasErrorParameter<NotFoundException> {
 
     private final ErrorPanel panel;
+    private final PresentApplicationErrorUseCase presentApplicationError;
 
-    public NotFoundErrorView() {
+    public NotFoundErrorView(PresentApplicationErrorUseCase presentApplicationError) {
+        this.presentApplicationError = presentApplicationError;
         setSizeFull();
         setPadding(false);
         panel = new ErrorPanel();
@@ -32,7 +35,9 @@ public class NotFoundErrorView extends VerticalLayout implements HasErrorParamet
         String message = parameter.hasCustomMessage()
                 ? parameter.getCustomMessage()
                 : parameter.getException().getMessage();
-        panel.setMessage(message);
-        return HttpServletResponse.SC_NOT_FOUND;
+        var presentation = presentApplicationError.present(
+                parameter.getException(), message, HttpServletResponse.SC_NOT_FOUND);
+        panel.setMessage(presentation.message());
+        return presentation.httpStatus();
     }
 }

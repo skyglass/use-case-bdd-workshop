@@ -1,0 +1,47 @@
+@startuml
+title update-pet (UC-008)
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "Clinic User" as user
+
+rectangle "pet-management / update-pet" {
+    usecase "1. select pet to edit" as SelectPet
+    usecase "2. load owner pet context" as LoadPet
+    usecase "3. submit pet changes" as SubmitPet
+    usecase "4. update pet" as UpdatePet
+    usecase "5. show owner details" as ShowDetails
+}
+
+user --> SelectPet
+SelectPet --> LoadPet
+LoadPet --> SubmitPet
+SubmitPet --> UpdatePet
+UpdatePet --> ShowDetails
+
+note bottom of SelectPet
+Owner
+end note
+
+note bottom of LoadPet
+Owner
+end note
+
+note bottom of SubmitPet
+Owner
+end note
+
+note bottom of UpdatePet
+Owner
+end note
+
+note bottom of ShowDetails
+Owner
+end note
+
+legend right
+Owner - Owner Aggregate
+endlegend
+
+@enduml

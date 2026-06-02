@@ -1,0 +1,41 @@
+@startuml
+title find-owners-by-last-name (UC-004)
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "Clinic User" as user
+
+rectangle "owner-management / find-owners-by-last-name" {
+    usecase "1. open owner search" as OpenSearch
+    usecase "2. submit last-name search" as SubmitPrefix
+    usecase "3. find matching owners" as QueryOwners
+    usecase "4. show search results" as ShowMatches
+}
+
+user --> OpenSearch
+OpenSearch --> SubmitPrefix
+SubmitPrefix --> QueryOwners
+QueryOwners --> ShowMatches
+
+note bottom of OpenSearch
+Owner
+end note
+
+note bottom of SubmitPrefix
+Owner
+end note
+
+note bottom of QueryOwners
+Owner
+end note
+
+note bottom of ShowMatches
+Owner
+end note
+
+legend right
+Owner - Owner Aggregate
+endlegend
+
+@enduml

@@ -1,5 +1,8 @@
 # Entity Model
 
+This file is the legacy full-system reference. The DDD source of truth is split by bounded module under
+[`docs/modules`](modules/), where each module owns its own `entity_model.md`.
+
 ## Entity Relationship Diagram
 
 ```mermaid
@@ -93,6 +96,9 @@ Join entity that associates veterinarians with the specialties they hold (many-t
 Validation rules in the tables above are enforced at two layers:
 
 - **Database (Flyway schema):** NOT NULL, UNIQUE, length limits, foreign keys, and composite-key constraints.
-- **UI form layer (Vaadin):** format checks (e.g. `telephone` must match `\d{10}`) and business rules (e.g. "birth date
-  must not be in the future"). The jOOQ domain records intentionally carry no validation annotations — forms validate
-  via their `validateAndRead()` method before calling a repository.
+- **Domain model:** value objects and aggregate behavior enforce invariants such as required names, telephone format,
+  owner-scoped pet-name uniqueness, and valid visit descriptions.
+- **UI form layer (Vaadin):** field-level feedback keeps the user interaction clear before commands reach the
+  application service.
+
+jOOQ records and `*PO` persistence objects remain database representations. They do not replace domain objects.

@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class UC005ViewOwnerDetailsTest extends PetClinicTestBase {
 
     @Test
-    @UseCase(id = "UC-005")
+    @UseCase(id = "view-owner-details")
     void ownerDetailsShowNameAddressCityAndTelephone() {
         navigate(OwnerDetailsView.class,
                 Map.of(OwnerRouteParameters.OWNER_ID, Integer.toString(OWNER_COLEMAN_ID)));
@@ -50,7 +50,7 @@ class UC005ViewOwnerDetailsTest extends PetClinicTestBase {
     }
 
     @Test
-    @UseCase(id = "UC-005", businessRules = "BR-002")
+    @UseCase(id = "view-owner-details", businessRules = "BR-002")
     void petsAreListedAlphabeticallyByName() {
         navigate(OwnerDetailsView.class,
                 Map.of(OwnerRouteParameters.OWNER_ID, Integer.toString(OWNER_COLEMAN_ID)));
@@ -63,7 +63,7 @@ class UC005ViewOwnerDetailsTest extends PetClinicTestBase {
     }
 
     @Test
-    @UseCase(id = "UC-005", businessRules = "BR-001")
+    @UseCase(id = "view-owner-details", businessRules = "BR-001")
     void visitsForEachPetAreListedChronologically() {
         navigate(OwnerDetailsView.class,
                 Map.of(OwnerRouteParameters.OWNER_ID, Integer.toString(OWNER_COLEMAN_ID)));
@@ -81,7 +81,7 @@ class UC005ViewOwnerDetailsTest extends PetClinicTestBase {
     }
 
     @Test
-    @UseCase(id = "UC-005", scenario = "A1: Owner Not Found")
+    @UseCase(id = "view-owner-details", scenario = "A1: Owner Not Found")
     void unknownOwnerRoutesToErrorView() {
         // UC-005 A1 now flows into UC-010: a missing owner id throws a
         // NotFoundException inside OwnerDetailsView.beforeEnter(), which
@@ -104,7 +104,7 @@ class UC005ViewOwnerDetailsTest extends PetClinicTestBase {
     }
 
     @Test
-    @UseCase(id = "UC-005")
+    @UseCase(id = "view-owner-details")
     void editAndAddPetActionsAreOffered() {
         navigate(OwnerDetailsView.class,
                 Map.of(OwnerRouteParameters.OWNER_ID, Integer.toString(OWNER_COLEMAN_ID)));

@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 class UC001ViewWelcomePageTest extends SpringBrowserlessTest {
 
     @Test
-    @UseCase(id = "UC-001", businessRules = "BR-001")
+    @UseCase(id = "view-welcome-page", businessRules = "BR-001")
     void welcomePageRendersAtRootRoute() {
         // No authentication is performed, covering BR-001 (Anonymous Access).
         assertDoesNotThrow(() -> navigate(WelcomeView.class),
@@ -27,7 +27,7 @@ class UC001ViewWelcomePageTest extends SpringBrowserlessTest {
     }
 
     @Test
-    @UseCase(id = "UC-001")
+    @UseCase(id = "view-welcome-page")
     void welcomePageShowsDecorativeImage() {
         navigate(WelcomeView.class);
 
@@ -38,7 +38,7 @@ class UC001ViewWelcomePageTest extends SpringBrowserlessTest {
     }
 
     @Test
-    @UseCase(id = "UC-001")
+    @UseCase(id = "view-welcome-page")
     void clinicLogoIsRendered() {
         navigate(WelcomeView.class);
 
@@ -49,7 +49,7 @@ class UC001ViewWelcomePageTest extends SpringBrowserlessTest {
     }
 
     @Test
-    @UseCase(id = "UC-001")
+    @UseCase(id = "view-welcome-page")
     void mainNavigationMenuHasRequiredItems() {
         navigate(WelcomeView.class);
 

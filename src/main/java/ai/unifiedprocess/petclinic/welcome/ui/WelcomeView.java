@@ -1,5 +1,6 @@
 package ai.unifiedprocess.petclinic.welcome.ui;
 
+import ai.unifiedprocess.petclinic.welcome.application.ViewWelcomePageUseCase;
 import ai.unifiedprocess.petclinic.core.ui.MainLayout;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -17,12 +18,13 @@ import com.vaadin.flow.router.Route;
 @PageTitle("Welcome")
 public class WelcomeView extends VerticalLayout {
 
-    public WelcomeView() {
+    public WelcomeView(ViewWelcomePageUseCase viewWelcomePage) {
         setSizeFull();
         setAlignItems(FlexComponent.Alignment.CENTER);
         setJustifyContentMode(FlexComponent.JustifyContentMode.START);
 
-        Image decorativeImage = new Image("images/pets.png", "Pets at the clinic");
+        var welcomePage = viewWelcomePage.view();
+        Image decorativeImage = new Image(welcomePage.decorativeImagePath(), "Pets at the clinic");
         decorativeImage.setMaxWidth("600px");
         decorativeImage.setWidthFull();
 

@@ -1,60 +1,100 @@
 # AIUP PetClinic
 
-A demo project accompanying a talk on **Spec-Driven Development with the AI Unified Process (AIUP)**.
+A demo project for **Spec-Driven Development with the AI Unified Process (AIUP)**, implemented as a DDD-oriented modular monolith.
 
-It revisits the classic [Spring PetClinic](https://github.com/spring-projects/spring-petclinic) sample, but built from
-the ground up using specifications first — use cases, an entity model, and UI flows — and then letting AI assistants
-implement the code against those specs.
-
-## AI Unified Process
-
-Spec-Driven Development (SDD) flips the usual "prompt and pray" workflow on its head. Instead of asking an AI to produce
-code from a one-line request, you invest upfront in a precise, machine-readable specification of what the system should
-do. The AI then works *against* that spec — generating code, tests, and documentation that can be verified against a
-stable source of truth.
-
-The [**AI Unified Process (AIUP)**](https://unifiedprocess.ai/) is a lightweight adaptation of the Unified Process for
-AI-assisted development. It keeps the artifacts that matter — use cases, domain models, architectural decisions — and
-drops the ceremony that doesn't. The result is a workflow where humans stay in charge of *intent* and AI handles the
-mechanical translation to code.
-
-This repository is the running example used in the talk.
-
-```
+The project revisits the classic Spring PetClinic sample. The implementation is driven by module-local use-case specifications, Gherkin scenarios, and thin Spring Modulith application services.
 
 ## Stack
 
 - **Java 25**
 - **Spring Boot 4.0**
-- **Vaadin 25** — UI
-- **jOOQ** — type-safe SQL
-- **Flyway** — database migrations
-- **PostgreSQL** (via Testcontainers for tests)
+- **Spring Modulith** - logical application modules
+- **Vaadin 25** - UI
+- **jOOQ** - type-safe SQL
+- **Flyway** - database migrations
+- **Cucumber JVM** - executable use-case scenarios
+- **PostgreSQL** via Testcontainers for tests
 
-## Specs
+## Specification Model
 
-The specifications that drive the implementation live in [`docs/`](docs/):
+The DDD source of truth lives in [`docs/modules`](docs/modules):
 
-- [`docs/entity_model.md`](docs/entity_model.md) — the domain model
-- [`docs/use_cases.puml`](docs/use_cases.puml) — PlantUML use case diagram
-- [`docs/use_cases/`](docs/use_cases) — individual use case specifications
+- `docs/modules/<module>/entity_model.md` - module domain model slice.
+- `docs/modules/<module>/<use-case-id>/UC-*.md` - JIRA epic ticket files.
+- `docs/modules/<module>/<use-case-id>/scenarios.feature` - Cucumber scenarios.
+- `docs/modules/<module>/<use-case-id>/use_cases.puml` - PlantUML use-case/aggregate-interaction diagram.
 
-## Running locally
+Important naming rule:
+
+- `UC-*.md` is the JIRA ticket id.
+- The use-case id is the dash-separated folder name, for example `add-pet-to-owner`.
+- The Gherkin `Feature:` name must exactly match the use-case id.
+
+Legacy specs remain under [`docs/use_cases`](docs/use_cases), [`docs/entity_model.md`](docs/entity_model.md), and [`docs/use_cases.puml`](docs/use_cases.puml) as compatibility references.
+
+## Modules
+
+| Module | Use cases |
+|--------|-----------|
+| `clinic-experience` | `view-welcome-page`, `view-application-error` |
+| `veterinary-directory` | `view-veterinarians` |
+| `owner-management` | `register-new-owner`, `find-owners-by-last-name`, `view-owner-details`, `update-owner` |
+| `pet-management` | `add-pet-to-owner`, `update-pet` |
+| `visit-management` | `book-visit-for-pet` |
+
+## Use-Case REST API
+
+REST resources are grouped by use case, not CRUD table names. The URL shape is
+`/api/<module-name>/<use-case-id>/<command>`, where `<use-case-id>` is the same dash-separated id used by the docs folder
+and Gherkin `Feature:`.
+
+Examples:
+
+- `POST /api/owner-management/register-new-owner/register`
+- `GET /api/owner-management/find-owners-by-last-name/search?prefix=Davis`
+- `GET /api/owner-management/view-owner-details/view/6`
+- `POST /api/pet-management/add-pet-to-owner/add`
+- `PUT /api/pet-management/update-pet/update/6/8`
+- `POST /api/visit-management/book-visit-for-pet/book`
+
+Each REST resource delegates to the matching `*UseCase` application service. Persistence follows the natural aggregate
+model, for example `AddPetToOwnerResource` -> `AddPetToOwnerUseCase` -> `OWNER` aggregate with `PET` entities.
+
+## Codex Skill
+
+Use the project skill when changing specs, scenarios, or implementation:
+
+```text
+Use $petclinic-use-case-ddd to implement or refine a PetClinic use case from docs/modules.
+```
+
+The skill lives at [`custom-skills/petclinic-use-case-ddd`](custom-skills/petclinic-use-case-ddd) and captures the module/use-case/scenario/application-service workflow.
+
+Codex project guidance is also available in [`AGENTS.md`](AGENTS.md). `CLAUDE.md` is kept for Claude Code compatibility.
+
+## Running
 
 ```bash
 ./mvnw spring-boot:test-run
 ```
 
-A PostgreSQL instance is required. Tests use Testcontainers and need Docker running:
+Tests use Testcontainers and need Docker running:
 
 ```bash
 ./mvnw test
 ```
 
+After changing Flyway migrations, regenerate jOOQ sources:
+
+```bash
+./mvnw generate-sources
+```
+
 ## Structure
 
-```
-docs/        — specifications (the source of truth)
-src/main/   — implementation derived from the specs
-src/test/   — tests verifying the implementation against the specs
+```text
+docs/modules/       - DDD module specifications, JIRA tickets, and Gherkin scenarios
+custom-skills/      - Codex custom skills for this project
+src/main/java/      - Spring Modulith modules, REST resources, application services, domain, infrastructure, Vaadin UI
+src/test/java/      - Cucumber steps, Modulith verification, and browserless Vaadin tests
 ```

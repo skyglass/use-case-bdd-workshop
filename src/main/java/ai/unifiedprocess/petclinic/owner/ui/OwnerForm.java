@@ -30,7 +30,7 @@ public class OwnerForm extends FormLayout {
     private final TextField address;
     private final TextField city;
     private final TextField telephone;
-    private final Binder<Owner> binder = new Binder<>(Owner.class);
+    private final Binder<OwnerFormData> binder = new Binder<>(OwnerFormData.class);
 
     public OwnerForm() {
         firstName = new TextField("First Name");
@@ -68,14 +68,20 @@ public class OwnerForm extends FormLayout {
         binder.forField(new ReadOnlyHasValue<Integer>(ignored -> {}))
                 .bind("id");
 
-        binder.readRecord(Owner.empty());
+        binder.readRecord(OwnerFormData.empty());
 
         add(firstName, lastName, address, city, telephone);
     }
 
     /** Fill the fields from an existing owner (used by UC-006). */
     public void read(Owner owner) {
-        binder.readRecord(owner);
+        binder.readRecord(new OwnerFormData(
+                owner.id(),
+                owner.firstName(),
+                owner.lastName(),
+                owner.address(),
+                owner.city(),
+                owner.telephone()));
     }
 
     /**
@@ -85,16 +91,36 @@ public class OwnerForm extends FormLayout {
      */
     public Optional<Owner> validateAndRead(Integer existingId) {
         try {
-            Owner owner = binder.writeRecord();
-            return Optional.of(new Owner(
-                    existingId,
-                    owner.firstName().trim(),
-                    owner.lastName().trim(),
-                    owner.address().trim(),
-                    owner.city().trim(),
-                    owner.telephone().trim()));
+            OwnerFormData owner = binder.writeRecord();
+            return Optional.of(existingId == null
+                    ? Owner.register(
+                            owner.firstName(),
+                            owner.lastName(),
+                            owner.address(),
+                            owner.city(),
+                            owner.telephone())
+                    : Owner.rehydrate(
+                            existingId,
+                            owner.firstName(),
+                            owner.lastName(),
+                            owner.address(),
+                            owner.city(),
+                            owner.telephone()));
         } catch (ValidationException e) {
             return Optional.empty();
+        }
+    }
+
+    private record OwnerFormData(
+            Integer id,
+            String firstName,
+            String lastName,
+            String address,
+            String city,
+            String telephone) {
+
+        static OwnerFormData empty() {
+            return new OwnerFormData(null, "", "", "", "", "");
         }
     }
 }

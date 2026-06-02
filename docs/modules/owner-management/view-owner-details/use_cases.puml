@@ -1,0 +1,35 @@
+@startuml
+title view-owner-details (UC-005)
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "Clinic User" as user
+
+rectangle "owner-management / view-owner-details" {
+    usecase "1. select owner" as SelectOwner
+    usecase "2. load owner details" as LoadOwner
+    usecase "3. show pets and visits" as ShowDetails
+}
+
+user --> SelectOwner
+SelectOwner --> LoadOwner
+LoadOwner --> ShowDetails
+
+note bottom of SelectOwner
+Owner
+end note
+
+note bottom of LoadOwner
+Owner
+end note
+
+note bottom of ShowDetails
+Owner
+end note
+
+legend right
+Owner - Owner Aggregate
+endlegend
+
+@enduml

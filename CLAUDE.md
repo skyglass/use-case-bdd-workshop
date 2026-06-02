@@ -8,22 +8,28 @@ Demo for a talk on **Spec-Driven Development with the AI Unified Process
 (AIUP)**. Re-implements the classic Spring PetClinic by writing the specs
 first (`docs/`) and generating code against them.
 
-**`docs/` is the source of truth, not the code.** When asked to implement
-something, read the relevant spec first:
+**`docs/modules/` is the source of truth, not the code.** When asked to
+implement something, read the relevant spec first:
 
-- `docs/entity_model.md` — ER diagram + attribute tables with validation
-  rules. The schema in Flyway migrations must match this.
-- `docs/use_cases.puml` — PlantUML actor/use-case diagram.
-- `docs/use_cases/UC-NNN-*.md` — one file per use case with preconditions,
-  main success scenario, alternative flows, postconditions, business rules.
-  UI flows, field labels, and navigation come from these.
+- `docs/modules/<module>/entity_model.md` — module-local domain model slice.
+- `docs/modules/<module>/<use-case-id>/UC-NNN-*.md` — JIRA epic
+  ticket files with preconditions, scenarios, postconditions, business rules,
+  field labels, and navigation.
+- `docs/modules/<module>/<use-case-id>/scenarios.feature`
+  — executable Cucumber scenarios. The `Feature:` name matches the use-case
+  id exactly.
+- `docs/modules/<module>/<use-case-id>/use_cases.puml` — PlantUML use-case
+  and aggregate-interaction diagram.
+
+`UC-NNN` is the JIRA ticket id. The use-case id is the dash-separated folder
+name, e.g. `add-pet-to-owner`.
 
 If a use case and the code disagree, the use case wins unless the user says
 otherwise.
 
 ## Stack
 
-- **Java 25**, **Spring Boot 4.0.5**, **Vaadin 25.1**
+- **Java 25**, **Spring Boot 4.0.5**, **Spring Modulith**, **Vaadin 25.1**
 - **jOOQ** for type-safe SQL — generated sources live in
   `target/generated-sources/jooq` under package
   `ai.unifiedprocess.demo.petclinic.database`
@@ -60,16 +66,18 @@ you add or change a migration, jOOQ classes won't update until you re-run
 ## When to read the detailed guides
 
 - **Before implementing a use case** → read the corresponding
-  `docs/use_cases/UC-NNN-*.md` spec first. It defines preconditions, the
-  main success scenario, alternative flows, postconditions, business rules,
-  field labels, and navigation. The spec is the source of truth.
+  `docs/modules/<module>/<use-case-id>/` folder first. It defines
+  the JIRA ticket(s), Gherkin scenarios, preconditions, main success scenario,
+  alternative flows, postconditions, business rules, field labels, and
+  navigation. The spec is the source of truth.
 
 - **Before implementing a use case, writing a view, adding a repository, or
   touching anything in `src/main/java/`** → read
   [`docs/guidelines/architecture.md`](docs/guidelines/architecture.md)
-  first. It covers package layout, jOOQ mapping patterns, Vaadin view
-  conventions, the shell exception, form validation, error handling, and
-  the `*Repository` stereotype rule.
+  first. It covers package layout, use-case REST resources, DDD aggregate
+  rules, jOOQ persistence-object mapping patterns, Vaadin view conventions,
+  the shell exception, form validation, error handling, and the repository
+  stereotype rule.
 
 - **Before writing or modifying any test under `src/test/java/`** → read
   [`docs/guidelines/testing.md`](docs/guidelines/testing.md) first. It

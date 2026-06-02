@@ -1,0 +1,47 @@
+@startuml
+title update-owner (UC-006)
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "Clinic User" as user
+
+rectangle "owner-management / update-owner" {
+    usecase "1. select owner to edit" as SelectOwner
+    usecase "2. load owner profile" as LoadOwner
+    usecase "3. submit owner changes" as SubmitChanges
+    usecase "4. update owner" as UpdateOwner
+    usecase "5. show owner details" as ShowDetails
+}
+
+user --> SelectOwner
+SelectOwner --> LoadOwner
+LoadOwner --> SubmitChanges
+SubmitChanges --> UpdateOwner
+UpdateOwner --> ShowDetails
+
+note bottom of SelectOwner
+Owner
+end note
+
+note bottom of LoadOwner
+Owner
+end note
+
+note bottom of SubmitChanges
+Owner
+end note
+
+note bottom of UpdateOwner
+Owner
+end note
+
+note bottom of ShowDetails
+Owner
+end note
+
+legend right
+Owner - Owner Aggregate
+endlegend
+
+@enduml

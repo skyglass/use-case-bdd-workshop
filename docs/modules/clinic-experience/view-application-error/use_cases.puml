@@ -1,0 +1,37 @@
+@startuml
+title view-application-error (UC-010)
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "Visitor" as visitor
+actor "Clinic User" as user
+
+rectangle "clinic-experience / view-application-error" {
+    usecase "1. receive router error" as Receive
+    usecase "2. build error presentation" as BuildError
+    usecase "3. show status and message" as ShowError
+}
+
+visitor --> Receive
+user --> Receive
+Receive --> BuildError
+BuildError --> ShowError
+
+note bottom of Receive
+Error Presentation
+end note
+
+note bottom of BuildError
+Error Presentation
+end note
+
+note bottom of ShowError
+Error Presentation
+end note
+
+legend right
+Error Presentation - Error Presentation Read Model
+endlegend
+
+@enduml

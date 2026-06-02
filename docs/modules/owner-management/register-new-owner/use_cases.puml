@@ -1,0 +1,41 @@
+@startuml
+title register-new-owner (UC-003)
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "Clinic User" as user
+
+rectangle "owner-management / register-new-owner" {
+    usecase "1. open owner registration" as OpenForm
+    usecase "2. submit owner details" as Submit
+    usecase "3. register owner" as CreateOwner
+    usecase "4. show owner details" as ShowDetails
+}
+
+user --> OpenForm
+OpenForm --> Submit
+Submit --> CreateOwner
+CreateOwner --> ShowDetails
+
+note bottom of OpenForm
+Owner
+end note
+
+note bottom of Submit
+Owner
+end note
+
+note bottom of CreateOwner
+Owner
+end note
+
+note bottom of ShowDetails
+Owner
+end note
+
+legend right
+Owner - Owner Aggregate
+endlegend
+
+@enduml

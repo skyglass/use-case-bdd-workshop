@@ -1,0 +1,4 @@
+interface:
+  display_name: "PetClinic Use Case DDD"
+  short_description: "Implement PetClinic use-case DDD slices"
+  default_prompt: "Use $petclinic-use-case-ddd to implement or refine a PetClinic use case from docs/modules."

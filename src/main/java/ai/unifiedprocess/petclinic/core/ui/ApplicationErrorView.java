@@ -1,5 +1,6 @@
 package ai.unifiedprocess.petclinic.core.ui;
 
+import ai.unifiedprocess.petclinic.core.application.PresentApplicationErrorUseCase;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.ErrorParameter;
@@ -21,8 +22,10 @@ import jakarta.servlet.http.HttpServletResponse;
 public class ApplicationErrorView extends VerticalLayout implements HasErrorParameter<Exception> {
 
     private final ErrorPanel panel;
+    private final PresentApplicationErrorUseCase presentApplicationError;
 
-    public ApplicationErrorView() {
+    public ApplicationErrorView(PresentApplicationErrorUseCase presentApplicationError) {
+        this.presentApplicationError = presentApplicationError;
         setSizeFull();
         setPadding(false);
         panel = new ErrorPanel();
@@ -34,7 +37,9 @@ public class ApplicationErrorView extends VerticalLayout implements HasErrorPara
         String message = parameter.hasCustomMessage()
                 ? parameter.getCustomMessage()
                 : parameter.getException().getMessage();
-        panel.setMessage(message);
-        return HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+        var presentation = presentApplicationError.present(
+                parameter.getException(), message, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        panel.setMessage(presentation.message());
+        return presentation.httpStatus();
     }
 }

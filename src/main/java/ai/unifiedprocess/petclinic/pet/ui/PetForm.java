@@ -34,7 +34,7 @@ public class PetForm extends FormLayout {
     private final TextField name;
     private final DatePicker birthDate;
     private final ComboBox<PetType> type;
-    private final Binder<Pet> binder = new Binder<>(Pet.class);
+    private final Binder<PetFormData> binder = new Binder<>(PetFormData.class);
 
     /**
      * Controls whether the type ComboBox is required at validation time.
@@ -74,13 +74,13 @@ public class PetForm extends FormLayout {
         binder.forField(new ReadOnlyHasValue<Integer>(ignored -> {}))
                 .bind("ownerId");
 
-        binder.readRecord(Pet.empty(null));
+        binder.readRecord(PetFormData.empty());
 
         add(name, birthDate, type);
     }
 
     public void read(Pet pet) {
-        binder.readRecord(pet);
+        binder.readRecord(new PetFormData(pet.id(), pet.name(), pet.birthDate(), pet.type(), pet.ownerId()));
     }
 
     /**
@@ -92,8 +92,10 @@ public class PetForm extends FormLayout {
     public Optional<Pet> validateAndRead(Integer existingId, Integer ownerId, boolean requireType) {
         this.typeRequired = requireType;
         try {
-            Pet pet = binder.writeRecord();
-            return Optional.of(new Pet(existingId, pet.name().trim(), pet.birthDate(), pet.type(), ownerId));
+            PetFormData pet = binder.writeRecord();
+            return Optional.of(existingId == null
+                    ? Pet.addToOwner(ownerId, pet.name(), pet.birthDate(), pet.type())
+                    : Pet.rehydrate(existingId, pet.name(), pet.birthDate(), pet.type(), ownerId));
         } catch (ValidationException e) {
             return Optional.empty();
         }
@@ -102,5 +104,12 @@ public class PetForm extends FormLayout {
     public void rejectName(String message) {
         name.setInvalid(true);
         name.setErrorMessage(message);
+    }
+
+    private record PetFormData(Integer id, String name, LocalDate birthDate, PetType type, Integer ownerId) {
+
+        static PetFormData empty() {
+            return new PetFormData(null, "", null, null, null);
+        }
     }
 }
