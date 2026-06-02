@@ -17,13 +17,13 @@ The project revisits the classic Spring PetClinic sample. The implementation is 
 
 ## Specification Model
 
-The DDD source of truth lives in [`docs/modules`](docs/modules). Top-level folders are Business Capabilities. Their
-child folders are Business Activities:
+The DDD source of truth lives in [`docs/capabilities`](docs/capabilities). Top-level folders are Software Capabilities.
+Each capability has an explicit `activities/` folder, and each activity has an explicit `use-cases/` folder:
 
-- `docs/modules/<business-capability>/entity_model.md` - capability domain model slice.
-- `docs/modules/<business-capability>/<business-activity>/<use-case-id>/uc.md` - JIRA-backed use-case specification.
-- `docs/modules/<business-capability>/<business-activity>/<use-case-id>/uc.feature` - Cucumber scenarios.
-- `docs/modules/<business-capability>/<business-activity>/<use-case-id>/uc.puml` - PlantUML use-case/aggregate-interaction diagram.
+- `docs/capabilities/<capability>/entity_model.md` - capability domain model slice.
+- `docs/capabilities/<capability>/activities/<activity>/use-cases/<use-case-id>/uc.md` - JIRA-backed use-case specification.
+- `docs/capabilities/<capability>/activities/<activity>/use-cases/<use-case-id>/uc.feature` - Cucumber scenarios.
+- `docs/capabilities/<capability>/activities/<activity>/use-cases/<use-case-id>/uc.puml` - PlantUML use-case/aggregate-interaction diagram.
 
 Important naming rule:
 
@@ -34,11 +34,11 @@ Important naming rule:
 
 ## Traceability Chain
 
-Enterprise business value is traced through this chain:
+Software is decomposed into progressively smaller goals through this chain:
 
 ```text
-Business Capability
-  -> Business Activity
+Software Capability
+  -> Software Activity
     -> Use Case / Gherkin Feature
       -> Gherkin Scenario
         -> Cucumber Step Definition
@@ -46,14 +46,16 @@ Business Capability
             -> Domain Model
 ```
 
-The Domain Model includes aggregate roots, child entities, value objects, repository ports, domain events, and optional
-domain services. Add a domain service only when a business rule does not belong naturally inside one aggregate root.
+Capabilities define strategic boundaries, activities define behavioral boundaries, use cases define delivery boundaries,
+and scenarios define executable flow examples. The Domain Model includes aggregate roots, child entities, value objects,
+repository ports, domain events, and optional domain services. Add a domain service only when a business rule does not
+belong naturally inside one aggregate root.
 
 Legacy specs remain under [`docs/use_case_history`](docs/use_case_history), [`docs/entity_model.md`](docs/entity_model.md), and [`docs/use_cases.puml`](docs/use_cases.puml) as compatibility references.
 
-## Business Capabilities
+## Software Capabilities
 
-| Business Capability | Business Activity | Use cases |
+| Software Capability | Software Activity | Use cases |
 |---------------------|-------------------|-----------|
 | `clinic-portal` | `clinic-experience` | `view-welcome-page`, `view-application-error` |
 | `vet-catalog` | `veterinary-directory` | `view-veterinarians` |
@@ -64,7 +66,7 @@ Legacy specs remain under [`docs/use_case_history`](docs/use_case_history), [`do
 ## Use-Case REST API
 
 REST resources are grouped by use case, not CRUD table names. The URL shape is
-`/api/<business-activity>/<use-case-id>/<command>`, where `<use-case-id>` is the same dash-separated id used by the docs
+`/api/<activity>/<use-case-id>/<command>`, where `<use-case-id>` is the same dash-separated id used by the docs
 folder and Gherkin `Feature:`.
 
 Examples:
@@ -84,7 +86,7 @@ model, for example `AddPetToOwnerResource` -> `AddPetToOwnerUseCase` -> `OWNER` 
 Use the project skill when changing specs, scenarios, or implementation:
 
 ```text
-Use $petclinic-use-case-ddd to implement or refine a PetClinic use case from docs/modules.
+Use $petclinic-use-case-ddd to implement or refine a PetClinic use case from docs/capabilities.
 ```
 
 The skill lives at [`custom-skills/petclinic-use-case-ddd`](custom-skills/petclinic-use-case-ddd) and captures the capability/activity/use-case/scenario/application-service workflow.
@@ -112,7 +114,7 @@ After changing Flyway migrations, regenerate jOOQ sources:
 ## Structure
 
 ```text
-docs/modules/       - DDD capability/activity specifications, JIRA tickets, and Gherkin scenarios
+docs/capabilities/ - DDD capability/activity/use-case specifications, JIRA tickets, and Gherkin scenarios
 custom-skills/      - Codex custom skills for this project
 src/main/java/      - Spring Modulith modules, REST resources, application services, domain, infrastructure, Vaadin UI
 src/test/java/      - Cucumber steps, Modulith verification, and browserless Vaadin tests

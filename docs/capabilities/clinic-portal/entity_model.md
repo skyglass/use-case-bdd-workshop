@@ -1,6 +1,6 @@
 # Clinic Portal Capability Entity Model
 
-This Business Capability has no persistent business aggregate. It owns presentation read models for the welcome page and
+This Software Capability has no persistent business aggregate. It owns presentation read models for the welcome page and
 application error handling.
 
 ## Aggregate Boundary Diagram

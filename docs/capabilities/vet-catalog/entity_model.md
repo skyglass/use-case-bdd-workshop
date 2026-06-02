@@ -1,6 +1,6 @@
 # Vet Catalog Capability Entity Model
 
-The `vet-catalog` Business Capability owns the `VET` aggregate model used by the `veterinary-directory` Business Activity.
+The `vet-catalog` Software Capability owns the `VET` aggregate model used by the `veterinary-directory` Software Activity.
 Specialties are loaded as part of the displayed veterinarian profile.
 
 ## Aggregate Boundary Diagram

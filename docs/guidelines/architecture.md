@@ -5,35 +5,35 @@ Read this **before implementing** anything in `src/main/java/`.
 ## Module layout
 
 Single Maven module, Spring Modulith application modules under `ai.unifiedprocess.petclinic`. The direct subpackages
-(`core`, `welcome`, `vet`, `owner`, `pet`, `visit`) are the current code modules that implement the Business
-Capabilities and Business Activities described in `docs/modules/`.
+(`core`, `welcome`, `vet`, `owner`, `pet`, `visit`) are the current code modules that implement the Software
+Capabilities and Software Activities described in `docs/capabilities/`.
 
 The documentation hierarchy is capability-first:
 
 ```text
-docs/modules/<business-capability>/entity_model.md
-docs/modules/<business-capability>/<business-activity>/<use-case-id>/
+docs/capabilities/<capability>/entity_model.md
+docs/capabilities/<capability>/activities/<activity>/use-cases/<use-case-id>/
 ```
 
-- **Business Capability** — business-owned ability and candidate module/service boundary, e.g. `owner-care` or
-  `vet-catalog`. It is an ownership boundary, not one concrete workflow.
-- **Business Activity** — regular value-producing activity inside a capability, e.g. `pet-management` or
-  `visit-management`.
-- **Use Case / Gherkin Feature** — minimal marketable feature described or refined by `uc.md`, which records the JIRA
-  ticket id. The `Feature:` name equals the use-case id. A good use case is a Business Activity workflow that delivers a
-  clear business outcome. This is the default application-service boundary.
+- **Software Capability** — strategic goal boundary: what this software can fundamentally achieve, e.g. `owner-care` or
+  `vet-catalog`. It is a candidate module/service boundary, not one concrete workflow.
+- **Software Activity** — behavioral boundary: how related use cases are organized to produce value inside a
+  capability, e.g. `pet-management` or `visit-management`.
+- **Use Case / Gherkin Feature** — delivery boundary: the smallest independently valuable goal. It is described or
+  refined by `uc.md`, which records the JIRA ticket id. The `Feature:` name equals the use-case id. This is the default
+  application-service boundary.
 - **Gherkin Scenario** — one business-relevant flow or supported transition inside the use case.
 - **Cucumber Step Definition** — test adapter from scenario language to application services and test fixture APIs.
 
-Business Activities may own shared policies, domain services, events, or projections when multiple use cases share real
+Software Activities may own shared policies, domain services, events, or projections when multiple use cases share real
 business behavior. Do not create an application service only because an activity exists; application services remain
 use-case command/lifecycle boundaries.
 
 The standard implementation traceability chain is:
 
 ```text
-Business Capability
-  -> Business Activity
+Software Capability
+  -> Software Activity
     -> Use Case / Gherkin Feature
       -> Gherkin Scenario
         -> Cucumber Step Definition
@@ -52,7 +52,7 @@ consistency boundary; later reactions triggered by events usually belong to anot
 Each feature module has up to four sub-packages:
 
 - **`api`** — REST resources grouped by use case, not CRUD noun. Resource paths follow
-  `/api/<business-activity>/<use-case-id>/<command>`, for example `/api/pet-management/add-pet-to-owner/add`. There is a
+  `/api/<activity>/<use-case-id>/<command>`, for example `/api/pet-management/add-pet-to-owner/add`. There is a
   one-to-one mapping from REST resource to application service.
 - **`application`** — use-case application services. These own command/result records, transaction boundaries, and the
   use-case lifecycle. REST resources, Vaadin views, and Cucumber steps call these services instead of reaching directly
@@ -70,12 +70,12 @@ resource for each use-case lifecycle.
 
 ## Use-case naming rule
 
-The dash-separated use-case id from `docs/modules` drives naming:
+The dash-separated use-case id from `docs/capabilities` drives naming:
 
 | Layer | Example |
 |-------|---------|
-| Business Capability folder | `owner-care` |
-| Business Activity folder and REST prefix | `pet-management` |
+| Software Capability folder | `owner-care` |
+| Software Activity folder and REST prefix | `pet-management` |
 | Use-case folder and Gherkin `Feature:` | `add-pet-to-owner` |
 | Java REST resource | `AddPetToOwnerResource` |
 | Java application service | `AddPetToOwnerUseCase` |

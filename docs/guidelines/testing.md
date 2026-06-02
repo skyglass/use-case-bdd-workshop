@@ -4,7 +4,7 @@ Read this **before writing or modifying any test** under `src/test/java/`.
 
 ## Framework
 
-- **Cucumber JVM** executes capability/activity-local use-case scenarios from `docs/modules/**/uc.feature`.
+- **Cucumber JVM** executes capability/activity-local use-case scenarios from `docs/capabilities/**/uc.feature`.
   `Feature:` names must equal the dash-separated use-case folder name. `UC-*` tags and the JIRA ticket id recorded in
   `uc.md` refer to JIRA tickets, not use-case ids. A `Scenario:` is one business-relevant flow or supported transition
   inside the use case.

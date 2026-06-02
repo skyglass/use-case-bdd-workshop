@@ -1,7 +1,7 @@
 # Owner Care Capability Entity Model
 
-The `owner-care` Business Capability owns the `OWNER` aggregate model used by the `owner-management`, `pet-management`,
-and `visit-management` Business Activities. Happy pet is a happy owner: the important invariants are owner-scoped, pet
+The `owner-care` Software Capability owns the `OWNER` aggregate model used by the `owner-management`, `pet-management`,
+and `visit-management` Software Activities. Happy pet is a happy owner: the important invariants are owner-scoped, pet
 names are unique per owner, and visits can only be booked for pets belonging to the selected owner.
 
 ## Aggregate Boundary Diagram

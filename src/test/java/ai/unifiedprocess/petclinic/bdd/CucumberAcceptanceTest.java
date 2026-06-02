@@ -7,7 +7,7 @@ import org.junit.platform.suite.api.Suite;
 
 @Suite
 @IncludeEngines("cucumber")
-@SelectDirectories("docs/modules")
+@SelectDirectories("docs/capabilities")
 @ConfigurationParameter(key = "cucumber.glue", value = "ai.unifiedprocess.petclinic.bdd")
 @ConfigurationParameter(key = "cucumber.plugin", value = "pretty")
 @ConfigurationParameter(key = "cucumber.publish.quiet", value = "true")

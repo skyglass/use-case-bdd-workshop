@@ -8,17 +8,17 @@ Demo for a talk on **Spec-Driven Development with the AI Unified Process
 (AIUP)**. Re-implements the classic Spring PetClinic by writing the specs
 first (`docs/`) and generating code against them.
 
-**`docs/modules/` is the source of truth, not the code.** When asked to
+**`docs/capabilities/` is the source of truth, not the code.** When asked to
 implement something, read the relevant spec first:
 
-- `docs/modules/<business-capability>/entity_model.md` — capability-local domain model slice.
-- `docs/modules/<business-capability>/<business-activity>/<use-case-id>/uc.md` — JIRA-backed
+- `docs/capabilities/<capability>/entity_model.md` — capability-local domain model slice.
+- `docs/capabilities/<capability>/activities/<activity>/use-cases/<use-case-id>/uc.md` — JIRA-backed
   use-case specification with preconditions, scenarios, postconditions, business
   rules, field labels, and navigation.
-- `docs/modules/<business-capability>/<business-activity>/<use-case-id>/uc.feature`
+- `docs/capabilities/<capability>/activities/<activity>/use-cases/<use-case-id>/uc.feature`
   — executable Cucumber scenarios. The `Feature:` name matches the use-case
   id exactly.
-- `docs/modules/<business-capability>/<business-activity>/<use-case-id>/uc.puml` — PlantUML use-case and
+- `docs/capabilities/<capability>/activities/<activity>/use-cases/<use-case-id>/uc.puml` — PlantUML use-case and
   aggregate-interaction diagram.
 
 `uc.md` records the JIRA ticket id. The use-case id is the dash-separated folder
@@ -34,8 +34,8 @@ otherwise.
 Use this chain for future implementation work:
 
 ```text
-Business Capability
-  -> Business Activity
+Software Capability
+  -> Software Activity
     -> Use Case / Gherkin Feature
       -> Gherkin Scenario
         -> Cucumber Step Definition
@@ -47,6 +47,10 @@ The Domain Model includes aggregate roots, child entities, value objects,
 repository ports, domain events, and optional domain services. Add a domain
 service only when a business rule does not belong naturally inside one aggregate
 root. An aggregate root is itself an entity.
+
+Capabilities define strategic boundaries, activities define behavioral
+boundaries, use cases define delivery boundaries, and scenarios define executable
+flow examples.
 
 ## Stack
 
@@ -87,7 +91,7 @@ you add or change a migration, jOOQ classes won't update until you re-run
 ## When to read the detailed guides
 
 - **Before implementing a use case** → read the corresponding
-  `docs/modules/<business-capability>/<business-activity>/<use-case-id>/` folder first. It defines
+  `docs/capabilities/<capability>/activities/<activity>/use-cases/<use-case-id>/` folder first. It defines
   the JIRA ticket(s), Gherkin scenarios, preconditions, main success scenario,
   alternative flows, postconditions, business rules, field labels, and
   navigation. The spec is the source of truth.
