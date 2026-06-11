@@ -2,6 +2,13 @@
 target
 src/main/frontend/generated
 src/main/frontend/index.html
+node_modules
+package.json
+package-lock.json
+tsconfig.json
+types.d.ts
+vite.config.ts
+vite.generated.ts
 /.classpath
 /.project
 /.settings/org.eclipse.core.resources.prefs

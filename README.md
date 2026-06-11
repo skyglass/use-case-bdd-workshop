@@ -96,9 +96,26 @@ Codex project guidance is also available in [`AGENTS.md`](AGENTS.md). `CLAUDE.md
 
 ## Running
 
+The default local UI starts with the read-only Capability Manager generated from [`docs/capabilities`](docs/capabilities).
+It is available at:
+
+- `http://localhost:8080/`
+- `http://localhost:8080/capabilities`
+
+Prerequisites:
+
+- Java 25 must be the active JDK.
+- Docker must be running because the Maven build runs Testcontainers-backed jOOQ generation.
+
+Start the application locally:
+
 ```bash
 ./mvnw spring-boot:test-run
 ```
+
+The Capability Manager uses local unauthenticated endpoints under `/api/capabilities`. Epic submission, scenario
+deletion, and new use-case creation currently return a mocked pull request plan; they do not create a Git branch, write
+files, or open a real PR yet.
 
 Tests use Testcontainers and need Docker running:
 
