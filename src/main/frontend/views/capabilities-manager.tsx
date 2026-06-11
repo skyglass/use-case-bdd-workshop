@@ -1,26 +1,30 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 type NodeType = 'root' | 'capability' | 'activity' | 'folder' | 'use-case';
-type PanelMode = 'submit' | 'view';
 
 type DocNode = {
   id: string;
   name: string;
   type: NodeType;
   relativePath: string;
+  repositoryName: string;
+  repositoryUrl: string;
   children: DocNode[];
   useCase: UseCaseDetails | null;
 };
 
 type UseCaseDetails = {
+  repositoryName: string;
+  repositoryUrl: string;
   capabilityId: string;
-  activityId: string;
+  activityPath: string;
+  activityIds: string[];
   useCaseId: string;
+  useCasePath: string;
   relativePath: string;
   ucMarkdown: string;
   featureText: string;
   scenarios: ScenarioBlock[];
-  nextEpicName: string;
 };
 
 type ScenarioBlock = {
@@ -29,52 +33,28 @@ type ScenarioBlock = {
   text: string;
 };
 
+type RepositorySummary = {
+  name: string;
+  url: string;
+  checkoutPath: string;
+  source: string;
+};
+
 type CapabilityTreeResponse = {
   root: DocNode;
   useCases: UseCaseDetails[];
-};
-
-type ChangedFile = {
-  path: string;
-  content: string;
-};
-
-type MockPullRequestResponse = {
-  id: string;
-  title: string;
-  branch: string;
-  status: string;
-  createdAt: string;
-  submitted: Record<string, string>;
-  changedFiles: ChangedFile[];
-};
-
-type PendingDeletion = {
-  useCase: UseCaseDetails;
-  scenario: ScenarioBlock;
-  epicText: string;
-};
-
-type NewUseCaseDialogProps = {
-  tree: CapabilityTreeResponse;
-  onClose: () => void;
-  onMockPullRequest: (result: MockPullRequestResponse) => void;
+  repositories: RepositorySummary[];
 };
 
 export default function CapabilitiesManager() {
   const [tree, setTree] = useState<CapabilityTreeResponse | null>(null);
   const [activeCapabilityId, setActiveCapabilityId] = useState('');
-  const [selectedUseCasePath, setSelectedUseCasePath] = useState('');
-  const [panelMode, setPanelMode] = useState<PanelMode>('submit');
+  const [selectedUseCaseKey, setSelectedUseCaseKey] = useState('');
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(new Set());
   const [expandedScenarioPaths, setExpandedScenarioPaths] = useState<Set<string>>(new Set());
-  const [editorText, setEditorText] = useState('');
-  const [pendingDeletion, setPendingDeletion] = useState<PendingDeletion | null>(null);
-  const [mockPullRequest, setMockPullRequest] = useState<MockPullRequestResponse | null>(null);
-  const [newUseCaseOpen, setNewUseCaseOpen] = useState(false);
+  const [epicUseCase, setEpicUseCase] = useState<UseCaseDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -87,7 +67,7 @@ export default function CapabilitiesManager() {
         const firstCapability = response.root.children.find((node) => node.type === 'capability');
         const firstUseCase = response.useCases[0];
         setActiveCapabilityId(firstCapability?.id ?? '');
-        setSelectedUseCasePath(firstUseCase?.relativePath ?? '');
+        setSelectedUseCaseKey(firstUseCase ? useCaseKey(firstUseCase) : '');
         setExpandedNodeIds(defaultExpandedNodeIds(response.root));
       })
       .catch((caught: unknown) => setError(errorMessage(caught)))
@@ -111,14 +91,8 @@ export default function CapabilitiesManager() {
   }, [activeCapabilityId, capabilityNodes]);
 
   const selectedUseCase = useMemo(() => {
-    return tree?.useCases.find((useCase) => useCase.relativePath === selectedUseCasePath) ?? null;
-  }, [selectedUseCasePath, tree]);
-
-  useEffect(() => {
-    if (selectedUseCase) {
-      setEditorText(selectedUseCase.featureText);
-    }
-  }, [selectedUseCase?.relativePath]);
+    return tree?.useCases.find((useCase) => useCaseKey(useCase) === selectedUseCaseKey) ?? null;
+  }, [selectedUseCaseKey, tree]);
 
   const selectCapability = (capability: DocNode) => {
     setActiveCapabilityId(capability.id);
@@ -129,14 +103,12 @@ export default function CapabilitiesManager() {
     });
     const firstUseCase = firstUseCaseInNode(capability);
     if (firstUseCase) {
-      selectUseCase(firstUseCase, panelMode);
+      selectUseCase(firstUseCase);
     }
   };
 
-  const selectUseCase = (useCase: UseCaseDetails, mode: PanelMode) => {
-    setSelectedUseCasePath(useCase.relativePath);
-    setPanelMode(mode);
-    setMockPullRequest(null);
+  const selectUseCase = (useCase: UseCaseDetails) => {
+    setSelectedUseCaseKey(useCaseKey(useCase));
   };
 
   const toggleNode = (nodeId: string) => {
@@ -151,72 +123,17 @@ export default function CapabilitiesManager() {
     });
   };
 
-  const toggleScenarios = (relativePath: string) => {
+  const toggleScenarios = (useCase: UseCaseDetails) => {
     setExpandedScenarioPaths((current) => {
+      const key = useCaseKey(useCase);
       const next = new Set(current);
-      if (next.has(relativePath)) {
-        next.delete(relativePath);
+      if (next.has(key)) {
+        next.delete(key);
       } else {
-        next.add(relativePath);
+        next.add(key);
       }
       return next;
     });
-  };
-
-  const submitEpic = async () => {
-    if (!selectedUseCase) {
-      return;
-    }
-    setSubmitting(true);
-    setError('');
-    try {
-      const response = await requestJson<MockPullRequestResponse>('/api/capabilities/mock-pr/submit-epic', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          capabilityId: selectedUseCase.capabilityId,
-          activityId: selectedUseCase.activityId,
-          useCaseId: selectedUseCase.useCaseId,
-          relativePath: selectedUseCase.relativePath,
-          submittedFeature: editorText,
-        }),
-      });
-      setMockPullRequest(response);
-    } catch (caught) {
-      setError(errorMessage(caught));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const submitScenarioDeletion = async () => {
-    if (!pendingDeletion) {
-      return;
-    }
-    setSubmitting(true);
-    setError('');
-    try {
-      const response = await requestJson<MockPullRequestResponse>('/api/capabilities/mock-pr/delete-scenario', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          capabilityId: pendingDeletion.useCase.capabilityId,
-          activityId: pendingDeletion.useCase.activityId,
-          useCaseId: pendingDeletion.useCase.useCaseId,
-          relativePath: pendingDeletion.useCase.relativePath,
-          scenarioId: pendingDeletion.scenario.id,
-          scenarioName: pendingDeletion.scenario.name,
-          scenarioText: pendingDeletion.scenario.text,
-          epicText: pendingDeletion.epicText,
-        }),
-      });
-      setPendingDeletion(null);
-      setMockPullRequest(response);
-    } catch (caught) {
-      setError(errorMessage(caught));
-    } finally {
-      setSubmitting(false);
-    }
   };
 
   if (loading) {
@@ -234,9 +151,7 @@ export default function CapabilitiesManager() {
           <p className="eyebrow">docs/capabilities</p>
           <h1>Capability Manager</h1>
         </div>
-        <button type="button" className="primary-button" onClick={() => setNewUseCaseOpen(true)}>
-          New Use Case
-        </button>
+        <RepositoryList repositories={tree?.repositories ?? []} />
       </header>
 
       {capabilityNodes.length > 0 && (
@@ -260,17 +175,13 @@ export default function CapabilitiesManager() {
             <TreeNodeView
               node={activeCapability}
               depth={0}
-              selectedUseCasePath={selectedUseCasePath}
+              selectedUseCaseKey={selectedUseCaseKey}
               expandedNodeIds={expandedNodeIds}
               expandedScenarioPaths={expandedScenarioPaths}
               onToggleNode={toggleNode}
               onToggleScenarios={toggleScenarios}
               onSelectUseCase={selectUseCase}
-              onDeleteScenario={(useCase, scenario) => setPendingDeletion({
-                useCase,
-                scenario,
-                epicText: defaultDeletionEpic(useCase, scenario),
-              })}
+              onCreateEpic={setEpicUseCase}
             />
           ) : (
             <div className="empty-pane">No capability folders found.</div>
@@ -282,44 +193,18 @@ export default function CapabilitiesManager() {
             <>
               <div className="detail-toolbar">
                 <div>
-                  <p className="breadcrumb">{breadcrumb(selectedUseCase)}</p>
+                  <p className="breadcrumb">{selectedUseCase.useCasePath}</p>
                   <h2>{selectedUseCase.useCaseId}</h2>
+                  <p className="source-line">{selectedUseCase.repositoryName}</p>
                 </div>
-                <div className="segmented-control" aria-label="Use-case view mode">
-                  <button
-                    type="button"
-                    className={panelMode === 'submit' ? 'active' : ''}
-                    onClick={() => setPanelMode('submit')}
-                  >
-                    Submit Epic
-                  </button>
-                  <button
-                    type="button"
-                    className={panelMode === 'view' ? 'active' : ''}
-                    onClick={() => setPanelMode('view')}
-                  >
-                    View Use Case
-                  </button>
-                </div>
+                <button type="button" className="primary-button" onClick={() => setEpicUseCase(selectedUseCase)}>
+                  Create Epic
+                </button>
               </div>
 
               {error && <div className="inline-error">{error}</div>}
 
-              {panelMode === 'submit' ? (
-                <div className="editor-panel">
-                  <div className="editor-header">
-                    <span>{selectedUseCase.nextEpicName}</span>
-                    <button type="button" className="primary-button" disabled={submitting} onClick={submitEpic}>
-                      {submitting ? 'Submitting...' : 'Submit Epic'}
-                    </button>
-                  </div>
-                  <GherkinEditor value={editorText} onChange={setEditorText} minRows={22} />
-                </div>
-              ) : (
-                <MarkdownDocument markdown={selectedUseCase.ucMarkdown} />
-              )}
-
-              {mockPullRequest && <MockPullRequestPanel response={mockPullRequest} />}
+              <MarkdownDocument markdown={selectedUseCase.ucMarkdown} />
             </>
           ) : (
             <div className="empty-pane">Select a use case.</div>
@@ -327,42 +212,8 @@ export default function CapabilitiesManager() {
         </section>
       </main>
 
-      {pendingDeletion && (
-        <Dialog title="Submit Epic for Scenario Deletion" onClose={() => setPendingDeletion(null)}>
-          <div className="dialog-summary">
-            <span>{pendingDeletion.useCase.useCaseId}</span>
-            <strong>{pendingDeletion.scenario.name}</strong>
-          </div>
-          <GherkinEditor
-            value={pendingDeletion.epicText}
-            onChange={(value) => setPendingDeletion({ ...pendingDeletion, epicText: value })}
-            minRows={12}
-          />
-          <div className="dialog-actions">
-            <button type="button" className="secondary-button" onClick={() => setPendingDeletion(null)}>
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="danger-button"
-              disabled={submitting}
-              onClick={submitScenarioDeletion}
-            >
-              {submitting ? 'Submitting...' : 'Submit Scenario Deletion'}
-            </button>
-          </div>
-        </Dialog>
-      )}
-
-      {newUseCaseOpen && tree && (
-        <NewUseCaseDialog
-          tree={tree}
-          onClose={() => setNewUseCaseOpen(false)}
-          onMockPullRequest={(response) => {
-            setMockPullRequest(response);
-            setNewUseCaseOpen(false);
-          }}
-        />
+      {epicUseCase && (
+        <EpicTemplateDialog useCase={epicUseCase} onClose={() => setEpicUseCase(null)} />
       )}
     </Shell>
   );
@@ -372,32 +223,50 @@ function Shell({ children }: { children: React.ReactNode }) {
   return <div className="capabilities-app">{children}</div>;
 }
 
+function RepositoryList({ repositories }: { repositories: RepositorySummary[] }) {
+  if (repositories.length === 0) {
+    return null;
+  }
+  return (
+    <div className="repository-list" aria-label="Supported repositories">
+      <p className="eyebrow">Repositories</p>
+      {repositories.map((repository) => (
+        <details className="repository-item" key={repository.name}>
+          <summary>{repository.name}</summary>
+          <a href={repository.url} target="_blank" rel="noreferrer">{repository.url}</a>
+        </details>
+      ))}
+    </div>
+  );
+}
+
 function TreeNodeView({
   node,
   depth,
-  selectedUseCasePath,
+  selectedUseCaseKey,
   expandedNodeIds,
   expandedScenarioPaths,
   onToggleNode,
   onToggleScenarios,
   onSelectUseCase,
-  onDeleteScenario,
+  onCreateEpic,
 }: {
   node: DocNode;
   depth: number;
-  selectedUseCasePath: string;
+  selectedUseCaseKey: string;
   expandedNodeIds: Set<string>;
   expandedScenarioPaths: Set<string>;
   onToggleNode: (nodeId: string) => void;
-  onToggleScenarios: (relativePath: string) => void;
-  onSelectUseCase: (useCase: UseCaseDetails, mode: PanelMode) => void;
-  onDeleteScenario: (useCase: UseCaseDetails, scenario: ScenarioBlock) => void;
+  onToggleScenarios: (useCase: UseCaseDetails) => void;
+  onSelectUseCase: (useCase: UseCaseDetails) => void;
+  onCreateEpic: (useCase: UseCaseDetails) => void;
 }) {
   const hasChildren = node.children.length > 0;
   const isExpanded = expandedNodeIds.has(node.id);
   const useCase = node.useCase;
-  const isSelected = useCase?.relativePath === selectedUseCasePath;
-  const scenariosExpanded = useCase ? expandedScenarioPaths.has(useCase.relativePath) : false;
+  const currentUseCaseKey = useCase ? useCaseKey(useCase) : '';
+  const isSelected = currentUseCaseKey === selectedUseCaseKey;
+  const scenariosExpanded = useCase ? expandedScenarioPaths.has(currentUseCaseKey) : false;
 
   return (
     <div className="tree-node">
@@ -407,7 +276,7 @@ function TreeNodeView({
             type="button"
             className="icon-button"
             aria-label={`Toggle scenarios for ${useCase.useCaseId}`}
-            onClick={() => onToggleScenarios(useCase.relativePath)}
+            onClick={() => onToggleScenarios(useCase)}
           >
             {scenariosExpanded ? '-' : '+'}
           </button>
@@ -428,7 +297,7 @@ function TreeNodeView({
           className="node-name"
           onClick={() => {
             if (useCase) {
-              onSelectUseCase(useCase, 'submit');
+              onSelectUseCase(useCase);
             } else if (hasChildren) {
               onToggleNode(node.id);
             }
@@ -440,8 +309,10 @@ function TreeNodeView({
 
         {useCase && (
           <div className="use-case-actions">
-            <button type="button" onClick={() => onSelectUseCase(useCase, 'submit')}>Submit Epic</button>
-            <button type="button" onClick={() => onSelectUseCase(useCase, 'view')}>View Use Case</button>
+            <button type="button" className="primary-action-button" onClick={() => onCreateEpic(useCase)}>
+              Create Epic
+            </button>
+            <button type="button" onClick={() => onSelectUseCase(useCase)}>View Use Case</button>
           </div>
         )}
       </div>
@@ -454,14 +325,6 @@ function TreeNodeView({
             useCase.scenarios.map((scenario) => (
               <div className="scenario-row" key={scenario.id}>
                 <span>{scenario.name}</span>
-                <button
-                  type="button"
-                  className="delete-scenario-button"
-                  aria-label={`Delete ${scenario.name}`}
-                  onClick={() => onDeleteScenario(useCase, scenario)}
-                >
-                  X
-                </button>
               </div>
             ))
           )}
@@ -473,20 +336,49 @@ function TreeNodeView({
           key={child.id}
           node={child}
           depth={depth + 1}
-          selectedUseCasePath={selectedUseCasePath}
+          selectedUseCaseKey={selectedUseCaseKey}
           expandedNodeIds={expandedNodeIds}
           expandedScenarioPaths={expandedScenarioPaths}
           onToggleNode={onToggleNode}
           onToggleScenarios={onToggleScenarios}
           onSelectUseCase={onSelectUseCase}
-          onDeleteScenario={onDeleteScenario}
+          onCreateEpic={onCreateEpic}
         />
       ))}
     </div>
   );
 }
 
-function GherkinEditor({
+function EpicTemplateDialog({ useCase, onClose }: { useCase: UseCaseDetails; onClose: () => void }) {
+  const [templateText, setTemplateText] = useState(() => epicTemplate(useCase));
+  const [copyStatus, setCopyStatus] = useState('');
+
+  const copyTemplate = async () => {
+    try {
+      await navigator.clipboard.writeText(templateText);
+      setCopyStatus('Copied');
+    } catch {
+      setCopyStatus('Select text to copy');
+    }
+  };
+
+  return (
+    <Dialog title="Create Epic" onClose={onClose}>
+      <div className="dialog-summary">
+        <span>{useCase.repositoryName}</span>
+        <strong>{useCase.useCaseId}</strong>
+      </div>
+      <GherkinTextWindow value={templateText} onChange={setTemplateText} minRows={24} />
+      <div className="dialog-actions">
+        <span className="copy-status" aria-live="polite">{copyStatus}</span>
+        <button type="button" className="secondary-button" onClick={copyTemplate}>Copy</button>
+        <button type="button" className="primary-button" onClick={onClose}>Done</button>
+      </div>
+    </Dialog>
+  );
+}
+
+function GherkinTextWindow({
   value,
   onChange,
   minRows,
@@ -504,6 +396,7 @@ function GherkinEditor({
         {highlightGherkin(value)}
       </pre>
       <textarea
+        aria-label="Epic acceptance criteria template"
         spellCheck={false}
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
@@ -529,6 +422,21 @@ function highlightGherkin(value: string) {
 }
 
 function highlightLine(line: string) {
+  const metadata = line.match(/^(Use Case ID|Use Case Path|Github)(:)(.*)$/);
+  if (metadata) {
+    return (
+      <>
+        <span className="token-metadata">{metadata[1]}</span><span className="token-punctuation">{metadata[2]}</span>
+        <span>{metadata[3]}</span>
+      </>
+    );
+  }
+
+  const footer = line.match(/^(Deleted Scenarios)(:?)$/);
+  if (footer) {
+    return <span className="token-feature">{line}</span>;
+  }
+
   const keyword = line.match(/^(\s*)(Feature|Rule|Background|Scenario(?: Outline)?|Examples)(:.*)$/);
   if (keyword) {
     return (
@@ -587,32 +495,6 @@ function MarkdownDocument({ markdown }: { markdown: string }) {
   );
 }
 
-function MockPullRequestPanel({ response }: { response: MockPullRequestResponse }) {
-  return (
-    <section className="mock-pr-panel" aria-label="Mock pull request">
-      <div className="mock-pr-header">
-        <div>
-          <p className="eyebrow">{response.id}</p>
-          <h3>{response.title}</h3>
-        </div>
-        <span className="status-pill">{response.status}</span>
-      </div>
-      <dl className="mock-pr-meta">
-        <div><dt>Branch</dt><dd>{response.branch}</dd></div>
-        <div><dt>Created</dt><dd>{response.createdAt}</dd></div>
-      </dl>
-      <div className="changed-files">
-        {response.changedFiles.map((file) => (
-          <details key={file.path}>
-            <summary>{file.path}</summary>
-            <pre>{file.content}</pre>
-          </details>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function Dialog({
   title,
   children,
@@ -632,93 +514,6 @@ function Dialog({
         {children}
       </section>
     </div>
-  );
-}
-
-function NewUseCaseDialog({ tree, onClose, onMockPullRequest }: NewUseCaseDialogProps) {
-  const capabilityOptions = tree.root.children.filter((node) => node.type === 'capability').map((node) => node.name);
-  const [capabilityId, setCapabilityId] = useState(capabilityOptions[0] ?? '');
-  const [activityPath, setActivityPath] = useState(firstActivityPath(tree, capabilityOptions[0]) ?? '');
-  const [useCaseId, setUseCaseId] = useState('new-use-case');
-  const [featureText, setFeatureText] = useState(defaultNewUseCaseFeature('new-use-case'));
-  const [error, setError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  const activityOptions = useMemo(() => activityPathsForCapability(tree, capabilityId), [tree, capabilityId]);
-
-  const submit = async () => {
-    setSubmitting(true);
-    setError('');
-    try {
-      const response = await requestJson<MockPullRequestResponse>('/api/capabilities/mock-pr/create-use-case', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          capabilityId,
-          activityPath,
-          useCaseId,
-          featureText,
-        }),
-      });
-      onMockPullRequest(response);
-    } catch (caught) {
-      setError(errorMessage(caught));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <Dialog title="New Use Case" onClose={onClose}>
-      <div className="new-use-case-form">
-        <label>
-          <span>Capability</span>
-          <input
-            list="capability-options"
-            value={capabilityId}
-            onChange={(event) => {
-              const value = toSlug(event.currentTarget.value);
-              setCapabilityId(value);
-              setActivityPath(firstActivityPath(tree, value) ?? activityPath);
-            }}
-          />
-          <datalist id="capability-options">
-            {capabilityOptions.map((option) => <option key={option} value={option} />)}
-          </datalist>
-        </label>
-
-        <label>
-          <span>Activity path</span>
-          <input
-            list="activity-options"
-            value={activityPath}
-            onChange={(event) => setActivityPath(toPath(event.currentTarget.value))}
-          />
-          <datalist id="activity-options">
-            {activityOptions.map((option) => <option key={option} value={option} />)}
-          </datalist>
-        </label>
-
-        <label>
-          <span>Use case id</span>
-          <input
-            value={useCaseId}
-            onChange={(event) => setUseCaseId(toSlug(event.currentTarget.value))}
-          />
-        </label>
-      </div>
-
-      {error && <div className="inline-error">{error}</div>}
-
-      <GherkinEditor value={featureText} onChange={setFeatureText} minRows={14} />
-
-      <div className="dialog-actions">
-        <button type="button" className="secondary-button" onClick={onClose}>Cancel</button>
-        <button type="button" className="primary-button" disabled={submitting} onClick={submit}>
-          {submitting ? 'Submitting...' : 'Submit Epic'}
-        </button>
-      </div>
-    </Dialog>
   );
 }
 
@@ -762,61 +557,19 @@ function firstUseCaseInNode(node: DocNode): UseCaseDetails | null {
   return null;
 }
 
-function defaultDeletionEpic(useCase: UseCaseDetails, scenario: ScenarioBlock) {
-  return `Feature: ${useCase.useCaseId}
-
-  Scenario: Delete ${scenario.name}
-    Given scenario "${scenario.name}" exists in use case "${useCase.useCaseId}"
-    When the scenario deletion epic is submitted
-    Then scenario "${scenario.name}" is removed from uc.feature
-`;
+function epicTemplate(useCase: UseCaseDetails) {
+  return [
+    `Use Case ID: ${useCase.useCaseId}`,
+    `Use Case Path: ${useCase.useCasePath}`,
+    `Github: ${useCase.repositoryUrl}`,
+    '',
+    useCase.featureText.trimEnd(),
+    '',
+  ].join('\n');
 }
 
-function defaultNewUseCaseFeature(useCaseId: string) {
-  return `Feature: ${useCaseId}
-
-  Scenario: Primary flow
-    Given the primary actor has a goal
-    When the actor completes the use case
-    Then the system records the expected outcome
-`;
-}
-
-function firstActivityPath(tree: CapabilityTreeResponse, capabilityId?: string) {
-  return activityPathsForCapability(tree, capabilityId ?? '')[0] ?? '';
-}
-
-function activityPathsForCapability(tree: CapabilityTreeResponse, capabilityId: string) {
-  const capability = tree.root.children.find((node) => node.name === capabilityId);
-  if (!capability) {
-    return [];
-  }
-  const paths: string[] = [];
-  const visit = (node: DocNode) => {
-    if (node.type === 'activity') {
-      const prefix = `${capability.name}/activities/`;
-      paths.push(node.relativePath.startsWith(prefix) ? node.relativePath.slice(prefix.length) : node.name);
-    }
-    node.children.forEach(visit);
-  };
-  visit(capability);
-  return paths;
-}
-
-function breadcrumb(useCase: UseCaseDetails) {
-  return `${useCase.capabilityId} / ${useCase.activityId} / ${useCase.useCaseId}`;
-}
-
-function toSlug(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-+|-+$)/g, '');
-}
-
-function toPath(value: string) {
-  return value
-    .split('/')
-    .map((segment) => toSlug(segment))
-    .filter(Boolean)
-    .join('/');
+function useCaseKey(useCase: UseCaseDetails) {
+  return `${useCase.repositoryName}:${useCase.relativePath}`;
 }
 
 function errorMessage(caught: unknown) {

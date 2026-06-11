@@ -2,8 +2,6 @@ package ai.unifiedprocess.petclinic.core.api;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -12,15 +10,12 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -29,117 +24,115 @@ import java.util.stream.Stream;
 @RequestMapping("/api/capabilities")
 public class CapabilityManagerResource {
 
-    private static final Pattern EPIC_FILE = Pattern.compile("EP-(\\d+)\\.feature");
-    private static final Pattern FEATURE_LINE = Pattern.compile("(?m)^\\s*Feature\\s*:\\s*.*$");
     private static final Pattern SCENARIO_LINE = Pattern.compile("^\\s*Scenario(?: Outline)?\\s*:\\s*(.+?)\\s*$");
-    private static final Pattern GHERKIN_GIVEN = Pattern.compile("(?m)^\\s*Given\\b");
-    private static final Pattern GHERKIN_WHEN = Pattern.compile("(?m)^\\s*When\\b");
-    private static final Pattern GHERKIN_THEN = Pattern.compile("(?m)^\\s*Then\\b");
-    private static final Path CAPABILITIES_ROOT = Path.of("docs", "capabilities").toAbsolutePath().normalize();
+    private static final Path LOCAL_REPOSITORY_ROOT = Path.of("").toAbsolutePath().normalize();
+    private static final List<SupportedRepository> SUPPORTED_REPOSITORIES = List.of(
+            new SupportedRepository("use-case-bdd-workshop",
+                    "https://github.com/skyglass/use-case-bdd-workshop"));
 
     @GetMapping("/tree")
     public CapabilityTreeResponse tree() {
-        ensureCapabilitiesRootExists();
-        DocNode root = buildNode(CAPABILITIES_ROOT);
+        List<RepositoryTree> repositoryTrees = SUPPORTED_REPOSITORIES.stream()
+                .map(this::repositoryTree)
+                .toList();
         List<UseCaseDetails> useCases = new ArrayList<>();
-        collectUseCases(root, useCases);
-        return new CapabilityTreeResponse(root, useCases);
-    }
+        List<DocNode> capabilityNodes = new ArrayList<>();
+        List<RepositorySummary> repositories = new ArrayList<>();
 
-    @PostMapping("/mock-pr/submit-epic")
-    public MockPullRequestResponse submitEpic(@RequestBody EpicSubmissionRequest request) {
-        Path useCasePath = existingUseCasePath(request.relativePath(), request.capabilityId(), request.activityId(),
-                request.useCaseId());
-        String useCaseId = useCaseId(useCasePath, request.useCaseId());
-        String submittedFeature = normalizeFeatureText(required(request.submittedFeature(), "submittedFeature"), useCaseId);
-        validateGherkinScenarios(submittedFeature);
-
-        String currentFeature = readString(useCasePath.resolve("uc.feature"));
-        String mergedFeature = mergeFeature(currentFeature, submittedFeature, useCaseId);
-        String epicName = nextEpicName(useCasePath);
-        String relativeUseCasePath = relativePath(useCasePath);
-
-        return mockPr("Submit epic for " + useCaseId,
-                List.of(
-                        new ChangedFile(relativeUseCasePath + "/epics/" + epicName, submittedFeature),
-                        new ChangedFile(relativeUseCasePath + "/uc.feature", mergedFeature)),
-                Map.of(
-                        "useCaseId", useCaseId,
-                        "relativePath", relativeUseCasePath,
-                        "epicName", epicName,
-                        "operation", "submit-epic"));
-    }
-
-    @PostMapping("/mock-pr/delete-scenario")
-    public MockPullRequestResponse deleteScenario(@RequestBody ScenarioDeletionRequest request) {
-        Path useCasePath = existingUseCasePath(request.relativePath(), request.capabilityId(), request.activityId(),
-                request.useCaseId());
-        String useCaseId = useCaseId(useCasePath, request.useCaseId());
-        String epicText = normalizeFeatureText(required(request.epicText(), "epicText"), useCaseId);
-        validateGherkinScenarios(epicText);
-
-        String currentFeature = readString(useCasePath.resolve("uc.feature"));
-        ParsedFeature parsedFeature = parseFeature(currentFeature);
-        ScenarioBlock scenario = parsedFeature.scenarios().stream()
-                .filter(candidate -> candidate.id().equals(request.scenarioId())
-                        || candidate.name().equals(request.scenarioName())
-                        || candidate.text().equals(request.scenarioText()))
-                .findFirst()
-                .orElseThrow(() -> badRequest("Scenario was not found in " + useCaseId));
-
-        String mergedFeature = removeScenario(parsedFeature, scenario.id());
-        String epicName = nextEpicName(useCasePath);
-        String relativeUseCasePath = relativePath(useCasePath);
-
-        return mockPr("Delete scenario from " + useCaseId,
-                List.of(
-                        new ChangedFile(relativeUseCasePath + "/epics/" + epicName, epicText),
-                        new ChangedFile(relativeUseCasePath + "/uc.feature", mergedFeature)),
-                Map.of(
-                        "useCaseId", useCaseId,
-                        "relativePath", relativeUseCasePath,
-                        "epicName", epicName,
-                        "scenarioId", scenario.id(),
-                        "scenarioName", scenario.name(),
-                        "operation", "delete-scenario"));
-    }
-
-    @PostMapping("/mock-pr/create-use-case")
-    public MockPullRequestResponse createUseCase(@RequestBody NewUseCaseRequest request) {
-        String capabilityId = cleanSegment(required(request.capabilityId(), "capabilityId"), "capabilityId");
-        String activityPath = cleanPath(required(request.activityPath(), "activityPath"), "activityPath");
-        String useCaseId = cleanSegment(required(request.useCaseId(), "useCaseId"), "useCaseId");
-        String featureText = normalizeFeatureText(required(request.featureText(), "featureText"), useCaseId);
-        validateGherkinScenarios(featureText);
-
-        String relativeUseCasePath = capabilityId + "/activities/" + activityPath + "/use-cases/" + useCaseId;
-        Path useCasePath = CAPABILITIES_ROOT.resolve(relativeUseCasePath).normalize();
-        if (!useCasePath.startsWith(CAPABILITIES_ROOT)) {
-            throw badRequest("The requested use-case path is outside docs/capabilities");
+        for (RepositoryTree repositoryTree : repositoryTrees) {
+            collectUseCases(repositoryTree.root(), useCases);
+            capabilityNodes.addAll(repositoryTree.root().children());
+            repositories.add(repositoryTree.repository());
         }
 
-        return mockPr("Create use case " + useCaseId,
-                List.of(
-                        new ChangedFile(relativeUseCasePath + "/epics/EP-001.feature", featureText),
-                        new ChangedFile(relativeUseCasePath + "/uc.feature", featureText)),
-                Map.of(
-                        "capabilityId", capabilityId,
-                        "activityPath", activityPath,
-                        "useCaseId", useCaseId,
-                        "relativePath", relativeUseCasePath,
-                        "epicName", "EP-001.feature",
-                        "operation", "create-use-case"));
+        capabilityNodes.sort(Comparator.comparing(DocNode::name)
+                .thenComparing(DocNode::repositoryName));
+        DocNode root = new DocNode("root:/", "Use Case Map", "root", "",
+                "", "", capabilityNodes, null);
+        return new CapabilityTreeResponse(root, useCases, repositories);
     }
 
-    private DocNode buildNode(Path directory) {
-        String relativePath = relativePath(directory);
-        String name = directory.equals(CAPABILITIES_ROOT) ? "docs/capabilities" : directory.getFileName().toString();
-        String type = nodeType(directory);
-        UseCaseDetails useCase = hasUseCaseFeature(directory) ? readUseCase(directory) : null;
+    private RepositoryTree repositoryTree(SupportedRepository repository) {
+        RepositoryCheckout checkout = repositoryCheckout(repository);
+        Path capabilitiesRoot = checkout.root().resolve("docs").resolve("capabilities").normalize();
+        ensureCapabilitiesRootExists(repository, capabilitiesRoot);
+        DocNode root = buildNode(capabilitiesRoot, repository, capabilitiesRoot);
+        RepositorySummary summary = new RepositorySummary(
+                repository.name(),
+                repository.url(),
+                checkout.root().toString(),
+                checkout.source());
+        return new RepositoryTree(summary, root);
+    }
+
+    private RepositoryCheckout repositoryCheckout(SupportedRepository repository) {
+        Path checkoutPath = Path.of(System.getProperty("java.io.tmpdir"), repository.name())
+                .toAbsolutePath()
+                .normalize();
+        try {
+            if (!Files.isDirectory(checkoutPath.resolve("docs").resolve("capabilities"))) {
+                cloneRepository(repository, checkoutPath);
+            }
+            return new RepositoryCheckout(checkoutPath, "github");
+        } catch (ResponseStatusException exception) {
+            Path localCapabilitiesRoot = LOCAL_REPOSITORY_ROOT.resolve("docs").resolve("capabilities");
+            if (Files.isDirectory(localCapabilitiesRoot)) {
+                return new RepositoryCheckout(LOCAL_REPOSITORY_ROOT, "local fallback");
+            }
+            throw exception;
+        }
+    }
+
+    private void cloneRepository(SupportedRepository repository, Path checkoutPath) {
+        try {
+            Files.createDirectories(checkoutPath.getParent());
+            if (Files.exists(checkoutPath) && !isEmptyDirectory(checkoutPath)) {
+                throw internalError("Temporary checkout exists but does not contain docs/capabilities: "
+                        + checkoutPath, null);
+            }
+            Process process = new ProcessBuilder(
+                    "git", "clone", "--depth", "1", repository.url(), checkoutPath.toString())
+                    .redirectErrorStream(true)
+                    .start();
+            boolean finished = process.waitFor(90, TimeUnit.SECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+                String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+                throw internalError("Timed out cloning " + repository.url(), null);
+            }
+            String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            if (process.exitValue() != 0) {
+                throw internalError("Unable to clone " + repository.url() + ": " + trimProcessOutput(output), null);
+            }
+        } catch (IOException exception) {
+            throw internalError("Unable to clone " + repository.url(), exception);
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw internalError("Interrupted while cloning " + repository.url(), exception);
+        }
+    }
+
+    private boolean isEmptyDirectory(Path directory) throws IOException {
+        if (!Files.isDirectory(directory)) {
+            return false;
+        }
+        try (Stream<Path> stream = Files.list(directory)) {
+            return stream.findAny().isEmpty();
+        }
+    }
+
+    private DocNode buildNode(Path directory, SupportedRepository repository, Path capabilitiesRoot) {
+        String relativePath = relativePath(directory, capabilitiesRoot);
+        String name = directory.equals(capabilitiesRoot) ? "docs/capabilities" : directory.getFileName().toString();
+        String type = nodeType(directory, capabilitiesRoot);
+        UseCaseDetails useCase = hasUseCaseFeature(directory)
+                ? readUseCase(directory, repository, capabilitiesRoot)
+                : null;
         List<DocNode> children = childDirectories(directory).stream()
-                .map(this::buildNode)
+                .map(child -> buildNode(child, repository, capabilitiesRoot))
                 .toList();
-        return new DocNode(nodeId(type, relativePath), name, type, relativePath, children, useCase);
+        return new DocNode(nodeId(repository, type, relativePath), name, type, relativePath,
+                repository.name(), repository.url(), children, useCase);
     }
 
     private List<Path> childDirectories(Path directory) {
@@ -153,40 +146,68 @@ public class CapabilityManagerResource {
         }
     }
 
-    private String nodeType(Path directory) {
-        if (directory.equals(CAPABILITIES_ROOT)) {
+    private String nodeType(Path directory, Path capabilitiesRoot) {
+        if (directory.equals(capabilitiesRoot)) {
             return "root";
         }
         if (hasUseCaseFeature(directory)) {
             return "use-case";
         }
-        Path relative = CAPABILITIES_ROOT.relativize(directory);
+        Path relative = capabilitiesRoot.relativize(directory);
         int count = relative.getNameCount();
         if (count == 1) {
             return "capability";
         }
-        if (count >= 3 && "activities".equals(relative.getName(1).toString()) && count == 3) {
+        if (isActivityDirectory(relative)) {
             return "activity";
         }
         return "folder";
+    }
+
+    private boolean isActivityDirectory(Path relative) {
+        if (relative.getNameCount() < 2) {
+            return false;
+        }
+        String lastSegment = relative.getFileName().toString();
+        if ("activities".equals(lastSegment) || "use-cases".equals(lastSegment)) {
+            return false;
+        }
+        boolean insideActivities = false;
+        for (int index = 0; index < relative.getNameCount(); index++) {
+            String segment = relative.getName(index).toString();
+            if ("use-cases".equals(segment)) {
+                return false;
+            }
+            if ("activities".equals(segment)) {
+                insideActivities = true;
+            }
+        }
+        return insideActivities;
     }
 
     private boolean hasUseCaseFeature(Path directory) {
         return Files.isRegularFile(directory.resolve("uc.feature"));
     }
 
-    private UseCaseDetails readUseCase(Path useCasePath) {
+    private UseCaseDetails readUseCase(Path useCasePath, SupportedRepository repository, Path capabilitiesRoot) {
         String featureText = readString(useCasePath.resolve("uc.feature"));
         ParsedFeature parsedFeature = parseFeature(featureText);
+        String capabilityId = capabilityId(useCasePath, capabilitiesRoot);
+        List<String> activityIds = activityIds(useCasePath, capabilitiesRoot);
+        String useCaseId = useCasePath.getFileName().toString();
+        String useCasePathText = useCasePathText(capabilityId, activityIds, useCaseId);
         return new UseCaseDetails(
-                capabilityId(useCasePath),
-                activityId(useCasePath),
-                useCasePath.getFileName().toString(),
-                relativePath(useCasePath),
+                repository.name(),
+                repository.url(),
+                capabilityId,
+                String.join("/", activityIds),
+                activityIds,
+                useCaseId,
+                useCasePathText,
+                relativePath(useCasePath, capabilitiesRoot),
                 optionalReadString(useCasePath.resolve("uc.md")).orElse(""),
                 featureText,
-                parsedFeature.scenarios(),
-                nextEpicName(useCasePath));
+                parsedFeature.scenarios());
     }
 
     private void collectUseCases(DocNode node, List<UseCaseDetails> useCases) {
@@ -194,44 +215,6 @@ public class CapabilityManagerResource {
             useCases.add(node.useCase());
         }
         node.children().forEach(child -> collectUseCases(child, useCases));
-    }
-
-    private Path existingUseCasePath(String relativePath, String capabilityId, String activityId, String useCaseId) {
-        String path = relativePath == null || relativePath.isBlank()
-                ? cleanSegment(required(capabilityId, "capabilityId"), "capabilityId") + "/activities/"
-                + cleanSegment(required(activityId, "activityId"), "activityId") + "/use-cases/"
-                + cleanSegment(required(useCaseId, "useCaseId"), "useCaseId")
-                : cleanPath(relativePath, "relativePath");
-        Path resolved = CAPABILITIES_ROOT.resolve(path).normalize();
-        if (!resolved.startsWith(CAPABILITIES_ROOT)) {
-            throw badRequest("The requested use-case path is outside docs/capabilities");
-        }
-        if (!Files.isRegularFile(resolved.resolve("uc.feature"))) {
-            throw badRequest("No uc.feature exists at " + path);
-        }
-        return resolved;
-    }
-
-    private String mergeFeature(String currentFeature, String submittedFeature, String useCaseId) {
-        ParsedFeature current = parseFeature(normalizeFeatureText(currentFeature, useCaseId));
-        ParsedFeature submitted = parseFeature(normalizeFeatureText(submittedFeature, useCaseId));
-        Map<String, ScenarioBlock> submittedByName = new LinkedHashMap<>();
-        submitted.scenarios().forEach(scenario -> submittedByName.put(scenario.name(), scenario));
-
-        List<ScenarioBlock> merged = new ArrayList<>();
-        for (ScenarioBlock currentScenario : current.scenarios()) {
-            ScenarioBlock replacement = submittedByName.remove(currentScenario.name());
-            merged.add(replacement == null ? currentScenario : replacement);
-        }
-        merged.addAll(submittedByName.values());
-        return renderFeature(current.prefix(), merged, useCaseId);
-    }
-
-    private String removeScenario(ParsedFeature parsedFeature, String scenarioId) {
-        List<ScenarioBlock> remaining = parsedFeature.scenarios().stream()
-                .filter(scenario -> !scenario.id().equals(scenarioId))
-                .toList();
-        return renderFeature(parsedFeature.prefix(), remaining, parsedFeature.featureName());
     }
 
     private ParsedFeature parseFeature(String featureText) {
@@ -251,7 +234,7 @@ public class CapabilityManagerResource {
                 : scenarioBlockStart(lines, scenarioLines.getFirst(), 0);
         String prefix = joinLines(lines.subList(0, firstBlockStart));
         List<ScenarioBlock> scenarios = new ArrayList<>();
-        Map<String, Integer> seenIds = new LinkedHashMap<>();
+        List<String> seenIds = new ArrayList<>();
         for (int scenarioIndex = 0; scenarioIndex < scenarioLines.size(); scenarioIndex++) {
             int scenarioLine = scenarioLines.get(scenarioIndex);
             int lowerBound = scenarioIndex == 0 ? 0 : scenarioLines.get(scenarioIndex - 1) + 1;
@@ -262,8 +245,13 @@ public class CapabilityManagerResource {
             String text = joinLines(lines.subList(blockStart, blockEnd)).stripTrailing();
             String name = scenarioName(lines.get(scenarioLine));
             String baseId = slugify(name);
-            int count = seenIds.merge(baseId, 1, Integer::sum);
-            String id = count == 1 ? baseId : baseId + "-" + count;
+            int count = 1;
+            String id = baseId;
+            while (seenIds.contains(id)) {
+                count++;
+                id = baseId + "-" + count;
+            }
+            seenIds.add(id);
             scenarios.add(new ScenarioBlock(id, name, text));
         }
 
@@ -283,104 +271,43 @@ public class CapabilityManagerResource {
         return start;
     }
 
-    private String renderFeature(String prefix, List<ScenarioBlock> scenarios, String useCaseId) {
-        String normalizedPrefix = normalizeFeatureText(prefix, useCaseId);
-        StringBuilder builder = new StringBuilder(normalizedPrefix.stripTrailing());
-        if (!scenarios.isEmpty()) {
-            builder.append("\n\n");
-        }
-        for (int index = 0; index < scenarios.size(); index++) {
-            if (index > 0) {
-                builder.append("\n\n");
-            }
-            builder.append(scenarios.get(index).text().stripTrailing());
-        }
-        builder.append("\n");
-        return builder.toString();
-    }
-
-    private String normalizeFeatureText(String text, String useCaseId) {
-        String normalized = normalizeLineEndings(text).stripTrailing();
-        Matcher featureMatcher = FEATURE_LINE.matcher(normalized);
-        if (featureMatcher.find()) {
-            return featureMatcher.replaceFirst("Feature: " + useCaseId);
-        }
-        return "Feature: " + useCaseId + (normalized.isBlank() ? "" : "\n\n" + normalized);
-    }
-
-    private void validateGherkinScenarios(String featureText) {
-        List<ScenarioBlock> scenarios = parseFeature(featureText).scenarios();
-        if (scenarios.isEmpty()) {
-            throw badRequest("At least one Scenario is required");
-        }
-        for (ScenarioBlock scenario : scenarios) {
-            if (!GHERKIN_GIVEN.matcher(scenario.text()).find()
-                    || !GHERKIN_WHEN.matcher(scenario.text()).find()
-                    || !GHERKIN_THEN.matcher(scenario.text()).find()) {
-                throw badRequest("Scenario \"" + scenario.name() + "\" must include Given, When, and Then steps");
-            }
-        }
-    }
-
-    private String nextEpicName(Path useCasePath) {
-        Path epicsPath = useCasePath.resolve("epics");
-        if (!Files.isDirectory(epicsPath)) {
-            return "EP-001.feature";
-        }
-        try (Stream<Path> stream = Files.list(epicsPath)) {
-            int max = stream.filter(Files::isRegularFile)
-                    .map(path -> EPIC_FILE.matcher(path.getFileName().toString()))
-                    .filter(Matcher::matches)
-                    .mapToInt(matcher -> Integer.parseInt(matcher.group(1)))
-                    .max()
-                    .orElse(0);
-            return "EP-%03d.feature".formatted(max + 1);
-        } catch (IOException exception) {
-            throw internalError("Unable to list epics for " + useCasePath, exception);
-        }
-    }
-
-    private MockPullRequestResponse mockPr(String title, List<ChangedFile> changedFiles, Map<String, String> submitted) {
-        return new MockPullRequestResponse(
-                "MOCK-PR-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT),
-                title,
-                "mock/" + slugify(title),
-                "mocked",
-                Instant.now().toString(),
-                submitted,
-                changedFiles);
-    }
-
-    private String capabilityId(Path useCasePath) {
-        Path relative = CAPABILITIES_ROOT.relativize(useCasePath);
+    private String capabilityId(Path useCasePath, Path capabilitiesRoot) {
+        Path relative = capabilitiesRoot.relativize(useCasePath);
         return relative.getNameCount() > 0 ? relative.getName(0).toString() : "";
     }
 
-    private String activityId(Path useCasePath) {
-        Path relative = CAPABILITIES_ROOT.relativize(useCasePath);
-        for (int index = 0; index < relative.getNameCount() - 1; index++) {
-            if ("activities".equals(relative.getName(index).toString()) && index + 1 < relative.getNameCount()) {
-                return relative.getName(index + 1).toString();
+    private List<String> activityIds(Path useCasePath, Path capabilitiesRoot) {
+        Path relative = capabilitiesRoot.relativize(useCasePath);
+        List<String> activities = new ArrayList<>();
+        for (int index = 1; index < relative.getNameCount(); index++) {
+            String segment = relative.getName(index).toString();
+            if ("use-cases".equals(segment)) {
+                break;
+            }
+            if (!"activities".equals(segment)) {
+                activities.add(segment);
             }
         }
-        return "";
+        return activities;
     }
 
-    private String useCaseId(Path useCasePath, String providedUseCaseId) {
-        return providedUseCaseId == null || providedUseCaseId.isBlank()
-                ? useCasePath.getFileName().toString()
-                : providedUseCaseId;
+    private String useCasePathText(String capabilityId, List<String> activityIds, String useCaseId) {
+        List<String> path = new ArrayList<>();
+        path.add(capabilityId);
+        path.addAll(activityIds);
+        path.add(useCaseId);
+        return String.join(" -> ", path);
     }
 
-    private String nodeId(String type, String relativePath) {
-        return type + ":" + (relativePath.isBlank() ? "/" : relativePath);
+    private String nodeId(SupportedRepository repository, String type, String relativePath) {
+        return repository.name() + ":" + type + ":" + (relativePath.isBlank() ? "/" : relativePath);
     }
 
-    private String relativePath(Path path) {
-        if (path.equals(CAPABILITIES_ROOT)) {
+    private String relativePath(Path path, Path capabilitiesRoot) {
+        if (path.equals(capabilitiesRoot)) {
             return "";
         }
-        return CAPABILITIES_ROOT.relativize(path).toString().replace('\\', '/');
+        return capabilitiesRoot.relativize(path).toString().replace('\\', '/');
     }
 
     private String readString(Path path) {
@@ -395,35 +322,10 @@ public class CapabilityManagerResource {
         return Files.isRegularFile(path) ? Optional.of(readString(path)) : Optional.empty();
     }
 
-    private void ensureCapabilitiesRootExists() {
-        if (!Files.isDirectory(CAPABILITIES_ROOT)) {
-            throw internalError("docs/capabilities was not found", null);
+    private void ensureCapabilitiesRootExists(SupportedRepository repository, Path capabilitiesRoot) {
+        if (!Files.isDirectory(capabilitiesRoot)) {
+            throw internalError(repository.url() + " does not contain docs/capabilities", null);
         }
-    }
-
-    private String required(String value, String fieldName) {
-        if (value == null || value.isBlank()) {
-            throw badRequest(fieldName + " is required");
-        }
-        return value;
-    }
-
-    private String cleanSegment(String value, String fieldName) {
-        if (!value.matches("[a-z0-9][a-z0-9-]*")) {
-            throw badRequest(fieldName + " must be dash-case");
-        }
-        return value;
-    }
-
-    private String cleanPath(String value, String fieldName) {
-        String normalized = normalizeLineEndings(value).strip();
-        if (normalized.isBlank() || normalized.startsWith("/") || normalized.contains("..")) {
-            throw badRequest(fieldName + " is not a valid relative path");
-        }
-        for (String segment : normalized.split("/")) {
-            cleanSegment(segment, fieldName);
-        }
-        return normalized;
     }
 
     private String normalizeLineEndings(String value) {
@@ -450,15 +352,26 @@ public class CapabilityManagerResource {
         return slug.isBlank() ? "scenario" : slug;
     }
 
-    private ResponseStatusException badRequest(String message) {
-        return new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+    private String trimProcessOutput(String output) {
+        String trimmed = output == null ? "" : output.strip();
+        return trimmed.length() <= 800 ? trimmed : trimmed.substring(0, 800) + "...";
     }
 
     private ResponseStatusException internalError(String message, Throwable cause) {
         return new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, message, cause);
     }
 
-    public record CapabilityTreeResponse(DocNode root, List<UseCaseDetails> useCases) {
+    public record CapabilityTreeResponse(
+            DocNode root,
+            List<UseCaseDetails> useCases,
+            List<RepositorySummary> repositories) {
+    }
+
+    public record RepositorySummary(
+            String name,
+            String url,
+            String checkoutPath,
+            String source) {
     }
 
     public record DocNode(
@@ -466,63 +379,38 @@ public class CapabilityManagerResource {
             String name,
             String type,
             String relativePath,
+            String repositoryName,
+            String repositoryUrl,
             List<DocNode> children,
             UseCaseDetails useCase) {
     }
 
     public record UseCaseDetails(
+            String repositoryName,
+            String repositoryUrl,
             String capabilityId,
-            String activityId,
+            String activityPath,
+            List<String> activityIds,
             String useCaseId,
+            String useCasePath,
             String relativePath,
             String ucMarkdown,
             String featureText,
-            List<ScenarioBlock> scenarios,
-            String nextEpicName) {
+            List<ScenarioBlock> scenarios) {
+    }
+
+    private record SupportedRepository(String name, String url) {
+    }
+
+    private record RepositoryCheckout(Path root, String source) {
+    }
+
+    private record RepositoryTree(RepositorySummary repository, DocNode root) {
     }
 
     private record ParsedFeature(String featureName, String prefix, List<ScenarioBlock> scenarios) {
     }
 
     public record ScenarioBlock(String id, String name, String text) {
-    }
-
-    public record EpicSubmissionRequest(
-            String capabilityId,
-            String activityId,
-            String useCaseId,
-            String relativePath,
-            String submittedFeature) {
-    }
-
-    public record ScenarioDeletionRequest(
-            String capabilityId,
-            String activityId,
-            String useCaseId,
-            String relativePath,
-            String scenarioId,
-            String scenarioName,
-            String scenarioText,
-            String epicText) {
-    }
-
-    public record NewUseCaseRequest(
-            String capabilityId,
-            String activityPath,
-            String useCaseId,
-            String featureText) {
-    }
-
-    public record MockPullRequestResponse(
-            String id,
-            String title,
-            String branch,
-            String status,
-            String createdAt,
-            Map<String, String> submitted,
-            List<ChangedFile> changedFiles) {
-    }
-
-    public record ChangedFile(String path, String content) {
     }
 }
